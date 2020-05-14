@@ -79,9 +79,10 @@ for epoch in range(0, EPOCHS):
         pred_scores = outputs[1]
         last_hidden = outputs[2]
         avg_lm_loss += lm_loss.item()
-
+        ppl = math.exp(avg_lm_loss)
         lm_loss.backward()
         # if clip is not None:
         #     torch.nn.utils.clip_grad_norm_(model.parameters(),clip)
         optimizer.step()
 
+    print("Epoch {} | Loss {} | PPL {}".format(epoch, avg_lm_loss, ppl))
