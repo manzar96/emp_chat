@@ -13,7 +13,7 @@ from core.utils.transforms import ToTensor
 
 
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
-
+print(DEVICE)
 options = get_options()
 
 # load dataset
