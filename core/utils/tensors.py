@@ -52,6 +52,10 @@ def t(data: types.NdTensor,
                       requires_grad=requires_grad)
     return tt
 
+def to_device(tt: torch.Tensor,
+              device: Optional[types.Device] = 'cpu',
+              non_blocking: bool = False) -> torch.Tensor:
+    return tt.to(device, non_blocking=non_blocking)
 
 def mktensor(data: types.NdTensor,
              dtype: torch.dtype = torch.float,
