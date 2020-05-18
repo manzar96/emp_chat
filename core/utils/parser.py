@@ -24,6 +24,15 @@ def get_parser():
     parser.add_argument(
         "-bs", "--batch-size", type=int, default=32, help="Training/eval batch size"
     )
+    parser.add_argument(
+        "-es", "--epochs", type=int, default=20, help="epochs to train model"
+    )
+    parser.add_argument(
+        "--ckpt",
+        type=str,
+        default="./checkpoints/tmp",
+        help="Checkpoints folder to save the model.",
+    )
 
     parser.add_argument("--cuda", action="store_true", help="Use CUDA")
 
