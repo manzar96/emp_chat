@@ -52,10 +52,20 @@ def t(data: types.NdTensor,
                       requires_grad=requires_grad)
     return tt
 
+
 def to_device(tt: torch.Tensor,
               device: Optional[types.Device] = 'cpu',
               non_blocking: bool = False) -> torch.Tensor:
     return tt.to(device, non_blocking=non_blocking)
+
+
+def from_checkpoint(
+        checkpoint_file: Optional[str],
+        obj: types.ModuleOrOptimizer,
+        map_location: Optional[types.Device] = None) -> types.ModuleOrOptimizer:  # noqa: E501
+    if checkpoint_file is None:
+        return obj
+
 
 def mktensor(data: types.NdTensor,
              dtype: torch.dtype = torch.float,
