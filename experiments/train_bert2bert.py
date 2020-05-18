@@ -56,6 +56,7 @@ optimizer = Adam(
     [p for p in model.parameters() if p.requires_grad],
     lr=0.001, weight_decay=1e-6)
 
+import ipdb;ipdb.set_trace()
 # train model
 EPOCHS = 10
 
@@ -79,6 +80,8 @@ for epoch in range(0, EPOCHS):
         pred_scores = outputs[1]
         last_hidden = outputs[2]
         avg_lm_loss += lm_loss.item()
+
+        avg_lm_loss = avg_lm_loss / len(train_loader)
         ppl = math.exp(avg_lm_loss)
         lm_loss.backward()
         # if clip is not None:
