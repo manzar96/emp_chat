@@ -3,16 +3,16 @@ import torch
 from tqdm import tqdm
 from torch.optim import Adam
 from torch.utils.data import DataLoader
-from transformers import BertTokenizer,EncoderDecoderModel
+from transformers import GPT2Tokenizer, GPT2LMHeadModel
 
 from core.utils.parser import get_options
 from core.data.empdataset import EmpatheticDataset
-from core.data.collators import Bert2BertCollator
+from core.data.collators import GPT2Collator
 from core.utils.transforms import ToTensor
-from core.trainers import EncoderDecoderTransformerTrainer
+from core.trainers import GPT2TransformerTrainer
 
 
-DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+DEVICE = 'cuda:1' if torch.cuda.is_available() else 'cpu'
 print(DEVICE)
 options = get_options()
 
@@ -24,7 +24,7 @@ else:
     raise NotImplementedError
 
 # make transforms
-tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
 tokenize = lambda x: tokenizer.tokenize(x)
 to_tokens_ids = lambda x: tokenizer.convert_tokens_to_ids(x)
 to_tensor = ToTensor()
@@ -36,7 +36,7 @@ train_dataset = train_dataset.map(tokenize).map(to_tokens_ids).map(to_tensor)
 val_dataset = val_dataset.map(tokenize).map(to_tokens_ids).map(to_tensor)
 
 # load data
-collator_fn = Bert2BertCollator(device='cpu')
+collator_fn = GPT2Collator(device='cpu')
 train_loader = DataLoader(train_dataset, batch_size=options.batch_size,
                           drop_last=False, shuffle=True,
                           collate_fn=collator_fn)
@@ -45,8 +45,8 @@ val_loader = DataLoader(val_dataset, batch_size=options.batch_size,
                           collate_fn=collator_fn)
 
 # create model
-model = EncoderDecoderModel.from_encoder_decoder_pretrained(
-    'bert-base-uncased', 'bert-base-uncased')
+model = GPT2LMHeadModel.from_pretrained('gpt2')
+model.config.output_hidden_states=True
 model.to(DEVICE)
 
 # params and optimizer
@@ -62,11 +62,8 @@ optimizer = Adam(
 import ipdb;ipdb.set_trace()
 
 # create trainer
-trainer = EncoderDecoderTransformerTrainer(model=model,
-                                           optimizer=optimizer,
-                                           patience=5,
-                                           scheduler=None,
-                                           checkpoint_dir=options.ckpt,
-                                           device=DEVICE)
+trainer = GPT2TransformerTrainer(model=model, optimizer=optimizer,
+                                 patience=5, scheduler=None,
+                                 checkpoint_dir=options.ckpt, device=DEVICE)
 # train model
 trainer.fit(train_loader, val_loader, epochs=options.epochs)
