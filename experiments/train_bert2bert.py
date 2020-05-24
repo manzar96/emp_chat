@@ -7,7 +7,7 @@ from transformers import BertTokenizer,EncoderDecoderModel
 
 from core.utils.parser import get_options
 from core.data.empdataset import EmpatheticDataset
-from core.data.collators import Bert2BertCollator
+from core.data.collators import EncoderDecoderTransformerCollator
 from core.utils.transforms import ToTensor
 from core.trainers import EncoderDecoderTransformerTrainer
 
@@ -36,7 +36,7 @@ train_dataset = train_dataset.map(tokenize).map(to_tokens_ids).map(to_tensor)
 val_dataset = val_dataset.map(tokenize).map(to_tokens_ids).map(to_tensor)
 
 # load data
-collator_fn = Bert2BertCollator(device='cpu')
+collator_fn = EncoderDecoderTransformerCollator(device='cpu')
 train_loader = DataLoader(train_dataset, batch_size=options.batch_size,
                           drop_last=False, shuffle=True,
                           collate_fn=collator_fn)
