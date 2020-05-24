@@ -63,6 +63,13 @@ def get_test_parser():
     )
 
     parser.add_argument(
+        "--outfolder",
+        type=str,
+        default="outputs/tmp",
+        help="Folder where the generated answers while be stored.",
+    )
+
+    parser.add_argument(
         "--max-hist-len",
         type=int,
         default=1,
@@ -81,7 +88,7 @@ def get_test_parser():
         "--ckpt",
         type=str,
         default="./checkpoints/tmp",
-        help="Checkpoints folder to save the model.",
+        help="Checkpoint file to load the model.",
     )
 
     parser.add_argument("--cuda", action="store_true", help="Use CUDA")

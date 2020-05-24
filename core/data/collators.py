@@ -102,4 +102,5 @@ class T5Collator(object):
                          padding_value=self.pad_indx)
                 .to(self.device))
         replaced_targ = self.replace_pad_labels(padded_targets, -100)
-        return padded_inputs, inputs_pad_mask, replaced_targ, targets_pad_mask
+        return padded_inputs, inputs_pad_mask, padded_targets,replaced_targ, \
+               targets_pad_mask
