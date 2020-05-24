@@ -304,7 +304,7 @@ class T5TransformerTrainer:
 
                 outputs = self.model(input_ids=inputs,
                                      attention_mask=inputs_att,
-                                     lm_labels=pad_targets)
+                                     lm_labels=repl_targets)
                 lm_loss = outputs[0]
                 pred_scores = outputs[1]
                 last_hidden = outputs[2]
@@ -347,7 +347,7 @@ class T5TransformerTrainer:
 
         outputs = self.model(input_ids=inputs,
                              attention_mask=inputs_att,
-                             lm_labels=pad_targets)
+                             lm_labels=repl_targets)
         lm_loss = outputs[0]
         pred_scores = outputs[1]
         last_hidden = outputs[2]
