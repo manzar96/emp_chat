@@ -30,24 +30,6 @@ class EncoderDecoderTransformerTrainer:
         self.device = device
         self.patience = patience
 
-    # def parse_batch(
-    #         self,
-    #         batch: List[torch.Tensor]) -> Tuple[torch.Tensor, ...]:
-    #     inputs = to_device(batch[0], device=self.device)
-    #     inputs_lens = to_device(batch[1], device=self.device)
-    #     inputs_att = to_device(batch[2], device=self.device)
-    #     targets = to_device(batch[3], device=self.device)
-    #     targets_lens = to_device(batch[4], device=self.device)
-    #     targets_att = to_device(batch[5], device=self.device)
-    #     return inputs, inputs_att, targets, targets_att
-
-    # def get_predictions_and_targets(
-    #         self: TrainerType,
-    #         batch: List[torch.Tensor]) -> Tuple[torch.Tensor, ...]:
-    #     inputs, inputs_mask, targets, targets_mask = self.parse_batch(batch)
-    #     y_pred = self.model(inputs, inputs_mask, targets, targets_mask)
-    #     return y_pred, inputs2
-
     def calc_val_loss(self, val_loader):
 
         self.model.eval()
@@ -55,19 +37,17 @@ class EncoderDecoderTransformerTrainer:
             avg_val_loss = 0
 
             for index, batch in enumerate(tqdm(val_loader)):
-
                 inputs = to_device(batch[0], device=self.device)
-                inputs_lens = to_device(batch[1], device=self.device)
-                inputs_att = to_device(batch[2], device=self.device)
-                targets = to_device(batch[3], device=self.device)
-                targets_lens = to_device(batch[4], device=self.device)
-                targets_att = to_device(batch[5], device=self.device)
+                inputs_att = to_device(batch[1], device=self.device)
+                padded_targets = to_device(batch[2], device=self.device)
+                replaced_targets = to_device(batch[3], device=self.device)
+                targets_att = to_device(batch[4], device=self.device)
 
                 outputs = self.model(input_ids=inputs,
                                      attention_mask=inputs_att,
-                                     decoder_input_ids=targets,
+                                     decoder_input_ids=padded_targets,
                                      decoder_attention_mask=targets_att,
-                                     lm_labels=targets)
+                                     lm_labels=padded_targets)
                 lm_loss = outputs[0]
                 pred_scores = outputs[1]
                 last_hidden = outputs[2]
@@ -103,17 +83,16 @@ class EncoderDecoderTransformerTrainer:
         self.optimizer.zero_grad()
 
         inputs = to_device(batch[0], device=self.device)
-        inputs_lens = to_device(batch[1], device=self.device)
-        inputs_att = to_device(batch[2], device=self.device)
-        targets = to_device(batch[3], device=self.device)
-        targets_lens = to_device(batch[4], device=self.device)
-        targets_att = to_device(batch[5], device=self.device)
+        inputs_att = to_device(batch[1], device=self.device)
+        padded_targets = to_device(batch[2], device=self.device)
+        replaced_targets = to_device(batch[3], device=self.device)
+        targets_att = to_device(batch[4], device=self.device)
 
         outputs = self.model(input_ids=inputs,
                              attention_mask=inputs_att,
-                             decoder_input_ids=targets,
+                             decoder_input_ids=padded_targets,
                              decoder_attention_mask=targets_att,
-                             lm_labels=targets)
+                             lm_labels=padded_targets)
         lm_loss = outputs[0]
         pred_scores = outputs[1]
         last_hidden = outputs[2]
