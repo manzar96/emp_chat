@@ -73,8 +73,14 @@ class T5Collator(object):
         self.pad_indx = pad_indx
         self.device = device
 
+    def replace_pad_labels(self,mytensor,value):
+        tmp = mytensor.clone()
+        tmp[mytensor==0] = value
+        return tmp
+
     def __call__(self, batch):
         inputs, targets, labels = map(list, zip(*batch))
+
         input_lengths = torch.tensor(
             [len(s) for s in inputs], device=self.device)
         targets_lengths = torch.tensor(
@@ -95,5 +101,5 @@ class T5Collator(object):
             pad_sequence(targets, batch_first=True,
                          padding_value=self.pad_indx)
                 .to(self.device))
-
-        return padded_inputs, inputs_pad_mask, padded_targets, targets_pad_mask
+        replaced_targ = self.replace_pad_labels(padded_targets, -100)
+        return padded_inputs, inputs_pad_mask, replaced_targ, targets_pad_mask

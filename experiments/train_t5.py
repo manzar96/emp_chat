@@ -25,15 +25,17 @@ else:
 
 # make transforms
 tokenizer = T5Tokenizer.from_pretrained('t5-small')
+appender = lambda x: x+" </s>" # this one is used because we must add </s> at
+# the end of each input/target
 tokenize = lambda x: tokenizer.tokenize(x)
 to_tokens_ids = lambda x: tokenizer.convert_tokens_to_ids(x)
 to_tensor = ToTensor()
-transforms = [tokenize, to_tokens_ids, to_tensor]
-# TODO: set bos_index, eos_index sto bert tokenizer apo special tokens
 
 # transform dataset
-train_dataset = train_dataset.map(tokenize).map(to_tokens_ids).map(to_tensor)
-val_dataset = val_dataset.map(tokenize).map(to_tokens_ids).map(to_tensor)
+train_dataset = train_dataset.map(appender).map(tokenize).map(to_tokens_ids).\
+    map(to_tensor)
+val_dataset = val_dataset.map(appender).map(tokenize).map(to_tokens_ids).map(
+    to_tensor)
 
 # load data
 collator_fn = T5Collator(device='cpu')
