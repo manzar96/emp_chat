@@ -298,12 +298,13 @@ class T5TransformerTrainer:
             for index, batch in enumerate(tqdm(val_loader)):
                 inputs = to_device(batch[0], device=self.device)
                 inputs_att = to_device(batch[1], device=self.device)
-                targets = to_device(batch[2], device=self.device)
-                targets_att = to_device(batch[3], device=self.device)
+                pad_targets = to_device(batch[2], device=self.device)
+                repl_targets = to_device(batch[3], device=self.device)
+                targets_att = to_device(batch[4], device=self.device)
 
                 outputs = self.model(input_ids=inputs,
                                      attention_mask=inputs_att,
-                                     lm_labels=targets)
+                                     lm_labels=pad_targets)
                 lm_loss = outputs[0]
                 pred_scores = outputs[1]
                 last_hidden = outputs[2]
@@ -340,12 +341,13 @@ class T5TransformerTrainer:
 
         inputs = to_device(batch[0], device=self.device)
         inputs_att = to_device(batch[1], device=self.device)
-        targets = to_device(batch[2], device=self.device)
-        targets_att = to_device(batch[3], device=self.device)
+        pad_targets = to_device(batch[2], device=self.device)
+        repl_targets = to_device(batch[3], device=self.device)
+        targets_att = to_device(batch[4], device=self.device)
 
         outputs = self.model(input_ids=inputs,
                              attention_mask=inputs_att,
-                             lm_labels=targets)
+                             lm_labels=pad_targets)
         lm_loss = outputs[0]
         pred_scores = outputs[1]
         last_hidden = outputs[2]
