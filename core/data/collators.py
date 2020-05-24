@@ -5,10 +5,15 @@ from core.utils.masks import pad_mask, subsequent_mask
 from core.utils.tensors import mktensor
 
 
-class Bert2BertCollator(object):
+class EncoderDecoderTransformerCollator(object):
     def __init__(self, pad_indx=0, device='cpu'):
         self.pad_indx = pad_indx
         self.device = device
+
+    def replace_pad_labels(self, mytensor, value):
+        tmp = mytensor.clone()
+        tmp[mytensor == 0] = value
+        return tmp
 
     def __call__(self, batch):
         inputs, targets, labels = map(list, zip(*batch))
@@ -36,8 +41,9 @@ class Bert2BertCollator(object):
                          padding_value=self.pad_indx)
                 .to(self.device))
 
-        return padded_inputs, inputs_lengths, inputs_pad_mask, padded_targets, \
-               targets_lengths, targets_pad_mask
+        replaced_targ = self.replace_pad_labels(padded_targets, -100)
+        return padded_inputs, inputs_pad_mask, padded_targets, replaced_targ,\
+               targets_pad_mask
 
 
 class GPT2Collator(object):
@@ -84,7 +90,7 @@ class T5Collator(object):
         input_lengths = torch.tensor(
             [len(s) for s in inputs], device=self.device)
         targets_lengths = torch.tensor(
-            [len(s) for s in inputs], device=self.device)
+            [len(s) for s in targets], device=self.device)
         # attention mask
         max_length = max(input_lengths)
         inputs_pad_mask = pad_mask(input_lengths, max_length=max_length,
