@@ -395,6 +395,7 @@ class TransformerVaswaniTrainer:
 
     def __init__(self, model,
                  optimizer,
+                 criterion,
                  patience,
                  scheduler=None,
                  checkpoint_dir=None,
@@ -402,6 +403,7 @@ class TransformerVaswaniTrainer:
                  device='cpu'):
 
         self.model = model.to(device)
+        self.criterion = criterion
         self.optimizer = optimizer
         self.scheduler = scheduler
         self.checkpoint_dir = checkpoint_dir
@@ -421,13 +423,9 @@ class TransformerVaswaniTrainer:
                 pad_targets = to_device(batch[2], device=self.device)
                 repl_targets = to_device(batch[3], device=self.device)
                 targets_att = to_device(batch[4], device=self.device)
-
-                outputs = self.model(input_ids=inputs,
-                                     attention_mask=inputs_att,
-                                     lm_labels=repl_targets)
-                lm_loss = outputs[0]
-                pred_scores = outputs[1]
-                last_hidden = outputs[2]
+                scores, preds, encoder_states = self.model(inputs,
+                                                           ys=pad_targets)
+                lm_loss = self.criterion(scores, pad_targets)
                 avg_val_loss += lm_loss.item()
 
             avg_val_loss = avg_val_loss / len(val_loader)
@@ -464,14 +462,9 @@ class TransformerVaswaniTrainer:
         pad_targets = to_device(batch[2], device=self.device)
         repl_targets = to_device(batch[3], device=self.device)
         targets_att = to_device(batch[4], device=self.device)
-
-        outputs = self.model(input_ids=inputs,
-                             attention_mask=inputs_att,
-                             lm_labels=repl_targets)
-        lm_loss = outputs[0]
-        pred_scores = outputs[1]
-        last_hidden = outputs[2]
-        return lm_loss, last_hidden
+        scores, preds, encoder_states = self.model(inputs, ys=pad_targets)
+        lm_loss = self.criterion(scores, pad_targets)
+        return lm_loss, None
 
     def train_epochs(self, n_epochs, train_loader, val_loader):
 
