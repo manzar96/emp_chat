@@ -46,11 +46,7 @@ def get_parser():
 
     parser.add_argument("--embeddings", type=str, help="Path to embeddings file")
     parser.add_argument("--embeddings_size", type=int,
-                        help="Emb size",required=True)
-
-    parser.add_argument(
-        "--learn-embeddings", action="store_true", help="Train on embeddings"
-    )
+                        help="Emb size", required=True)
     return parser
 
 
