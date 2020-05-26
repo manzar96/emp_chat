@@ -1,10 +1,10 @@
-from core.utils import types
+from core.utils import mytypes
 from typing import cast, Callable, Optional, Tuple
 import torch
 
-def t_(data: types.NdTensor,
+def t_(data: mytypes.NdTensor,
        dtype: torch.dtype = torch.float,
-       device: Optional[types.Device] = 'cpu',
+       device: Optional[mytypes.Device] = 'cpu',
        requires_grad: bool = False) -> torch.Tensor:
     """Convert a list or numpy array to torch tensor. If a torch tensor
     is passed it is cast to  dtype, device and the requires_grad flag is
@@ -29,9 +29,9 @@ def t_(data: types.NdTensor,
     return tt
 
 
-def t(data: types.NdTensor,
+def t(data: mytypes.NdTensor,
       dtype: torch.dtype = torch.float,
-      device: types.Device = 'cpu',
+      device: mytypes.Device = 'cpu',
       requires_grad: bool = False) -> torch.Tensor:
     """Convert a list or numpy array to torch tensor. If a torch tensor
     is passed it is cast to  dtype, device and the requires_grad flag is
@@ -54,22 +54,22 @@ def t(data: types.NdTensor,
 
 
 def to_device(tt: torch.Tensor,
-              device: Optional[types.Device] = 'cpu',
+              device: Optional[mytypes.Device] = 'cpu',
               non_blocking: bool = False) -> torch.Tensor:
     return tt.to(device, non_blocking=non_blocking)
 
 
 def from_checkpoint(
         checkpoint_file: Optional[str],
-        obj: types.ModuleOrOptimizer,
-        map_location: Optional[types.Device] = None) -> types.ModuleOrOptimizer:  # noqa: E501
+        obj: mytypes.ModuleOrOptimizer,
+        map_location: Optional[mytypes.Device] = None) -> mytypes.ModuleOrOptimizer:  # noqa: E501
     if checkpoint_file is None:
         return obj
 
 
-def mktensor(data: types.NdTensor,
+def mktensor(data: mytypes.NdTensor,
              dtype: torch.dtype = torch.float,
-             device: types.Device = 'cpu',
+             device: mytypes.Device = 'cpu',
              requires_grad: bool = False,
              copy: bool = True) -> torch.Tensor:
     """Convert a list or numpy array to torch tensor. If a torch tensor

@@ -6,7 +6,6 @@ import time
 from tqdm import tqdm
 from typing import cast, List, Optional, Tuple, TypeVar
 from core.utils.tensors import to_device
-from core.utils import types
 import random
 
 TrainerType = TypeVar('TrainerType', bound='Trainer')

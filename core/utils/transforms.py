@@ -5,7 +5,7 @@ import sentencepiece as spm
 from transformers import BertTokenizer
 from spacy.attrs import ORTH
 
-from core.data.tokens import SPECIAL_TOKENS
+from core.utils.tokens import SPECIAL_TOKENS
 from core.utils.tensors import mktensor
 
 
