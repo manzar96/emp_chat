@@ -1,4 +1,5 @@
 import os
+import numpy as np
 from core.utils.tensors import mktensor
 from torch.utils.data import Dataset
 from transformers import BertTokenizer
@@ -69,6 +70,35 @@ class EmpatheticDataset(Dataset):
     def map(self, t):
         self.transforms.append(t)
         return self
+
+    def word_counts(self, tokenizer=None):
+        voc_counts = {}
+        for question, answer, label in self.data:
+            if tokenizer is None:
+                words, counts = np.unique(np.array(question.split(' ')),
+                                          return_counts=True)
+            else:
+                words, counts = np.unique(np.array(tokenizer(question)),
+                                          return_counts=True)
+            for word, count in zip(words, counts):
+                if word not in voc_counts.keys():
+                    voc_counts[word] = count
+                else:
+                    voc_counts[word] += count
+
+            if tokenizer is None:
+                words, counts = np.unique(np.array(answer.split(' ')),
+                                          return_counts=True)
+            else:
+                words, counts = np.unique(np.array(tokenizer(answer)),
+                                          return_counts=True)
+            for word, count in zip(words, counts):
+                if word not in voc_counts.keys():
+                    voc_counts[word] = count
+                else:
+                    voc_counts[word] += count
+
+        return voc_counts
 
     def __len__(self):
         return len(self.data)
