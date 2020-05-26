@@ -110,3 +110,41 @@ class T5Collator(object):
         replaced_targ = self.replace_pad_labels(padded_targets, -100)
         return padded_inputs, inputs_pad_mask, padded_targets,replaced_targ, \
                targets_pad_mask
+
+
+class TransformerVaswaniCollator(object):
+    def __init__(self, pad_indx=0, device='cpu'):
+        self.pad_indx = pad_indx
+        self.device = device
+
+    def replace_pad_labels(self,mytensor,value):
+        tmp = mytensor.clone()
+        tmp[mytensor==0] = value
+        return tmp
+
+    def __call__(self, batch):
+        inputs, targets, labels = map(list, zip(*batch))
+
+        input_lengths = torch.tensor(
+            [len(s) for s in inputs], device=self.device)
+        targets_lengths = torch.tensor(
+            [len(s) for s in targets], device=self.device)
+        # attention mask
+        max_length = max(input_lengths)
+        inputs_pad_mask = pad_mask(input_lengths, max_length=max_length,
+                                   device=self.device)
+        max_length = max(targets_lengths)
+        targets_pad_mask = pad_mask(targets_lengths, max_length=max_length,
+                                   device=self.device)
+        # Pad inputs and targets
+        padded_inputs = (
+            pad_sequence(inputs, batch_first=True,
+                         padding_value=self.pad_indx)
+                .to(self.device))
+        padded_targets = (
+            pad_sequence(targets, batch_first=True,
+                         padding_value=self.pad_indx)
+                .to(self.device))
+        replaced_targ = self.replace_pad_labels(padded_targets, -100)
+        return padded_inputs, inputs_pad_mask, padded_targets,replaced_targ, \
+               targets_pad_mask
