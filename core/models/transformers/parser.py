@@ -2,12 +2,6 @@ import argparse
 
 def add_cmdline_args(argparser):
     argparser.add_argument_group("Transformer Vaswani Arguments")
-    argparser.add_argument(
-        '-esz',
-        '--embedding-size',
-        type=int,
-        help='Size of all embedding layers',
-    )
     argparser.add_argument('-nl', '--n-layers', type=int, default=2)
     argparser.add_argument(
         '-hid',
@@ -38,6 +32,9 @@ def add_cmdline_args(argparser):
     )
     argparser.add_argument('--learn-positional-embeddings',
                            action='store_true', default=False)
+    argparser.add_argument('--learn-embeddings',
+                           action='store_true', default=False,
+                           help="learn embeddings")
     argparser.add_argument('--embeddings-scale', action='store_false',
                            default=True)
     argparser.add_argument(
