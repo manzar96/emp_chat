@@ -156,7 +156,7 @@ class TransformerEncodeDecoderVaswani(nn.Module):
         output = F.linear(tensor, self.embedding.weight)
         # compatibility with fairseq: fairseq sometimes reuses BOS tokens and
         # we need to force their probability of generation to be 0.
-        output[:, :, self.start_idx] = neginf(output.dtype)
+        #output[:, :, self.start_idx] = neginf(output.dtype)
         return output
     
     def decode_forced(self, encoder_states, targets):

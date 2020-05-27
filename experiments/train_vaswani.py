@@ -102,7 +102,7 @@ print('Total Parameters: {}'.format(numparams))
 print('Trainable Parameters: {}'.format(train_numparams))
 optimizer = Adam(
     [p for p in model.parameters() if p.requires_grad],
-    lr=0.001, weight_decay=1e-6)
+    lr=1.0, weight_decay=1e-6)
 
 criterion = SequenceCrossEntropyLoss(word2idx[DIALOG_SPECIAL_TOKENS.PAD.value])
 import ipdb;ipdb.set_trace()
@@ -113,6 +113,7 @@ trainer = TransformerVaswaniTrainer(model=model,
                                     criterion=criterion,
                                     patience=5,
                                     scheduler=None,
+                                    clip=1.0,
                                     checkpoint_dir=options.ckpt,
                                     device=DEVICE)
 # train model
