@@ -8,6 +8,8 @@ import torch.nn.functional as F
 import math
 
 from typing import Dict, Tuple, Optional
+from core.modules.treesearch import GreedySearch, BeamSearch, TopKSampling, \
+    NucleusSampling, DelayedBeamSearch
 from torch.nn.parameter import Parameter
 
 LAYER_NORM_EPS = 1e-5
@@ -68,6 +70,7 @@ class TransformerEncodeDecoderVaswani(nn.Module):
 
         if embedding_weights is not None:
             assert not self.pad_idx, "pad_idx is None"
+            print("Embeddings init with pretrained!")
             self.embedding = nn.Embedding(len(dictionary), embedding_size,
                                      padding_idx=self.pad_idx)
             self.embedding.weight = nn.Parameter(torch.from_numpy(
@@ -76,6 +79,7 @@ class TransformerEncodeDecoderVaswani(nn.Module):
         else:
             self.embedding = nn.Embedding(len(dictionary), embedding_size,
                                      padding_idx=self.pad_idx)
+            print("Embeddings init with normal distr!")
             nn.init.normal_(self.embedding.weight, 0, embedding_size ** -0.5)
             self.embedding.weight.requires_grad = opt.learn_embeddings
 
@@ -241,6 +245,102 @@ class TransformerEncodeDecoderVaswani(nn.Module):
         # use teacher forcing
         scores, preds = self.decode_forced(encoder_states, ys)
         return scores, preds, encoder_states
+
+
+    def generate(self,*inputs, beam, max_ts,options):
+        """
+        Generate an output with beam search.
+
+        Depending on the options, this may perform greedy/topk/nucleus generation.
+
+        :param Batch batch:
+            Batch structure with input and labels
+        :param int beam_size:
+            Size of each beam during the search
+        :param int max_ts:
+            the maximum length of the decoded sequence
+
+        :return:
+            tuple (beam_pred_scores, beams)
+
+            - beam_preds_scores: list of (prediction, score) pairs for each sample in
+              Batch
+            - beams :list of Beam instances defined in Beam class, can be used for any
+              following postprocessing, e.g. dot logging.
+        """
+        bsz = inputs[0].shape[0]
+        encoder_states = self.encoder(*inputs)
+        beams = [self.treesearch_factory() for i in range(bsz)]
+
+    def _treesearch_factory(self, opt):
+        method = opt.method
+        beam_size = opt.beam_size
+        if method == 'greedy':
+            return GreedySearch(
+                beam_size,
+                min_length=0,
+                block_ngram=opt.beam_block_ngram,
+                context_block_ngram=opt.beam_context_block_ngram,
+                length_penalty=opt.beam_length_penalty,
+                padding_token=self.NULL_IDX,
+                bos_token=self.START_IDX,
+                eos_token=self.END_IDX,
+                device=self.device,
+            )
+        elif method == 'beam':
+            return BeamSearch(
+                beam_size,
+                min_length=opt.beam_min_length,
+                block_ngram=opt.beam_block_ngram,
+                context_block_ngram=opt.beam_context_block_ngram,
+                length_penalty=opt.beam_length_penalty,
+                padding_token=self.NULL_IDX,
+                bos_token=self.START_IDX,
+                eos_token=self.END_IDX,
+                device=self.device,
+            )
+        elif method == 'delayedbeam':
+            return DelayedBeamSearch(
+                opt.topk,
+                opt.beam_delay,
+                beam_size,
+                min_length=opt.beam_min_length,
+                block_ngram=opt.beam_block_ngram,
+                context_block_ngram=opt.beam_context_block_ngram,
+                length_penalty=opt.beam_length_penalty,
+                padding_token=self.NULL_IDX,
+                bos_token=self.START_IDX,
+                eos_token=self.END_IDX,
+                device=self.device,
+            )
+        elif method == 'topk':
+            return TopKSampling(
+                opt.topk,
+                beam_size,
+                min_length=opt.beam_min_length,
+                block_ngram=opt.beam_block_ngram,
+                context_block_ngram=opt.beam_context_block_ngram,
+                length_penalty=opt.beam_length_penalty,
+                padding_token=self.NULL_IDX,
+                bos_token=self.START_IDX,
+                eos_token=self.END_IDX,
+                device=self.device,
+            )
+        elif method == 'nucleus':
+            return NucleusSampling(
+                opt.topp,
+                beam_size,
+                min_length=opt.beam_min_length,
+                block_ngram=opt.beam_block_ngram,
+                context_block_ngram=opt.beam_context_block_ngram,
+                length_penalty=opt.beam_length_penalty,
+                padding_token=self.NULL_IDX,
+                bos_token=self.START_IDX,
+                eos_token=self.END_IDX,
+                device=self.device,
+            )
+        else:
+            raise ValueError(f"Can't use inference method {method}")
 
 
 class TransformerEncoder(nn.Module):

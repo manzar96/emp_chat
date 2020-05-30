@@ -104,11 +104,11 @@ class EmbeddingsLoader(object):
         # read file, line by line
         with open(self.embeddings_file, "r") as f:
             index = len(embeddings)
-            for index, line in enumerate(f):
+            for count, line in enumerate(f):
                 # skip the first row if it is a header
-                if len(line.split()) < self.dim_ and index == 0:
+                if len(line.split()) < self.dim_ and count == 0:
                     continue
-                if len(line.split()) < self.dim_ and index != 0:
+                if len(line.split()) < self.dim_ and count != 0:
                     print("line: {}".format(line))
                     raise (ValueError, "Found an embedding with wrong dim!")
 
