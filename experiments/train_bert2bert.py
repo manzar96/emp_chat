@@ -63,7 +63,8 @@ print('Total Parameters: {}'.format(numparams))
 print('Trainable Parameters: {}'.format(train_numparams))
 optimizer = Adam(
     [p for p in model.parameters() if p.requires_grad],
-    lr=0.001, weight_decay=1e-6)
+    lr=options.lr, weight_decay=1e-6)
+#run with lr 0.001
 if options.optimckpt is not None:
     state_dict = torch.load(options.optim, map_location='cpu')
     optimizer.load_state_dict(state_dict)

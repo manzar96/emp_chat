@@ -1,47 +1,24 @@
 import torch
 import math
 import os
+import pickle
 import numpy as np
 from tqdm import tqdm
 from torch.nn.functional import cosine_similarity
 from torch.utils.data import DataLoader
-from transformers import T5Tokenizer, T5ForConditionalGeneration
-from sentence_transformers import SentenceTransformer
-
+from core.utils.transforms import DialogSpacyTokenizer, ToTensor, ToTokenIds
 
 from core.utils.parser import get_test_parser
-from core.models.huggingface.parser import add_cmdline_args_gen
+from core.models.transformers.parser import add_cmdline_args,\
+    add_cmdline_args_gen
 from core.data.empdataset import EmpatheticDataset
-from core.data.collators import T5Collator
-from core.utils.transforms import ToTensor
+from core.utils.tokens import DIALOG_SPECIAL_TOKENS
+from core.data.collators import TransformerVaswaniCollator
+from core.models.transformers.modules_parlai import \
+    TransformerEncodeDecoderVaswani
 from core.utils.tensors import to_device
 from core.metrics.metrics import calc_sentence_bleu_score, \
     calc_word_error_rate
-
-
-def calc_similarity_trans(options):
-
-    all_sentences = []
-    outfile = open(os.path.join(options.outfolder, "gen_outs.txt"), "r")
-    lines = outfile.readlines()
-    for line in lines:
-        inp, out, trgt = line[:-1].split("\t\t")
-        all_sentences.append(inp)
-        all_sentences.append(out)
-        all_sentences.append(trgt)
-
-    model = SentenceTransformer('bert-base-nli-stsb-mean-tokens')
-    sentence_embeddings = model.encode(all_sentences)
-    mydict = dict(zip(all_sentences, sentence_embeddings))
-
-    cos_sim=[]
-    for line in lines:
-        inp, out, trgt = line[:-1].split("\t\t")
-        tensor1 = torch.tensor(mydict[out]).unsqueeze(0)
-        tensor2 = torch.tensor(mydict[trgt]).unsqueeze(0)
-        cos_sim.append(cosine_similarity(tensor1, tensor2))
-
-    print("Cosine Similairity: {}".format(np.mean(cos_sim)))
 
 
 def calc_test_ppl(model, loader, device):
@@ -83,7 +60,7 @@ def calc_metrics(options,tokenizer):
     print("Word Error Rate: {}".format(np.mean(word_error_rate)))
 
 
-def _generate(options, model, loader, tokenizer, device):
+def _generate(options, model, loader, idx2word, device):
 
     if not os.path.exists(options.outfolder):
         os.makedirs(options.outfolder)
@@ -92,26 +69,22 @@ def _generate(options, model, loader, tokenizer, device):
         inputs = to_device(batch[0], device=device)
         inputs_att = to_device(batch[1], device=device)
         pad_targets = to_device(batch[2], device=device)
+        repl_targets = to_device(batch[3], device=device)
+        targets_att = to_device(batch[4], device=device)
 
-        outputs = model.generate(input_ids=inputs,
-                       attention_mask=inputs_att,
-                       max_length=50,
-                       do_sample=options.sampling,
-                       num_beams=options.beam_size,
-                       temperature=options.temp,
-                       top_k=options.topk,
-                       top_p=options.topp,
-                       num_return_sequences=options.Nbest,
-                       )
-        inp_list = ["".join(tokenizer.decode(inputs[i])) for i in range(
-            inputs.shape[0])]
-        out_list = ["".join(tokenizer.decode(outputs[i])) for i in range(
-            inputs.shape[0])]
-        tgt_list = ["".join(tokenizer.decode(pad_targets[i])) for i in range(
-            inputs.shape[0])]
-        for i in range(len(inp_list)):
-            outfile.write(inp_list[i]+"\t\t"+out_list[i]+"\t\t"+tgt_list[
-                i]+"\n")
+        scores, preds, encoder_states = model(inputs, ys=pad_targets)
+        import ipdb;ipdb.set_trace()
+        inp_tokens = [idx2word[token.item()] for token in inputs[0]]
+        pred_tokens = [idx2word[token.item()] for token in preds[0]]
+        # inp_list = ["".join(tokenizer.decode(inputs[i])) for i in range(
+        #     inputs.shape[0])]
+        # out_list = ["".join(tokenizer.decode(outputs[i])) for i in range(
+        #     inputs.shape[0])]
+        # tgt_list = ["".join(tokenizer.decode(pad_targets[i])) for i in range(
+        #     inputs.shape[0])]
+        # for i in range(len(inp_list)):
+        #     outfile.write(inp_list[i]+"\t\t"+out_list[i]+"\t\t"+tgt_list[
+        #         i]+"\n")
 
     outfile.close()
     print(len(loader))
@@ -119,9 +92,8 @@ def _generate(options, model, loader, tokenizer, device):
 
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 print(DEVICE)
-
-# get args from cmdline
 parser = get_test_parser()
+parser = add_cmdline_args(parser)
 parser = add_cmdline_args_gen(parser)
 options = parser.parse_args()
 
@@ -131,32 +103,47 @@ if options.dataset_name == "empchat":
 else:
     raise NotImplementedError
 
-# make transforms
-tokenizer = T5Tokenizer.from_pretrained('t5-small')
-tokenize = lambda x: tokenizer.tokenize(x)
-to_tokens_ids = lambda x: tokenizer.convert_tokens_to_ids(x)
-to_tensor = ToTensor()
-transforms = [tokenize, to_tokens_ids, to_tensor]
-# TODO: set bos_index, eos_index sto bert tokenizer apo special tokens
+# load vocab
+if options.vocabckpt is None:
+    raise (IOError, "give --vocabckpt argument")
+file1 = open(os.path.join(options.vocabckpt,'word2idx.pkl'),'rb')
+word2idx = pickle.load(file1)
+file2 = open(os.path.join(options.vocabckpt,'idx2word.pkl'),'rb')
+idx2word = pickle.load(file2)
 
+# make transforms
+tokenizer = DialogSpacyTokenizer(lower=True, append_eos=True,
+                                 specials=DIALOG_SPECIAL_TOKENS)
+to_tokens_ids = ToTokenIds(word2idx, specials=DIALOG_SPECIAL_TOKENS)
+to_tensor = ToTensor()
 # transform dataset
-test_dataset = test_dataset.map(tokenize).map(to_tokens_ids).map(to_tensor)
+test_dataset = test_dataset.map(tokenizer).map(to_tokens_ids).map(to_tensor)
 
 # load test data
-collator_fn = T5Collator(device='cpu')
+collator_fn = TransformerVaswaniCollator(device='cpu')
 test_loader = DataLoader(test_dataset, batch_size=options.batch_size,
                          drop_last=False, shuffle=True, collate_fn=collator_fn)
 
 
 # load model from checkpoint
-model = T5ForConditionalGeneration.from_pretrained('t5-small')
+model = TransformerEncodeDecoderVaswani(options,
+                                        dictionary=word2idx,
+                                        embedding_size=options.embeddings_size,
+                                        embedding_weights=None,
+                                        pad_idx=word2idx[
+                                            DIALOG_SPECIAL_TOKENS.PAD.value],
+                                        start_idx=word2idx[
+                                            DIALOG_SPECIAL_TOKENS.SOS.value],
+                                        end_idx=word2idx[
+                                            DIALOG_SPECIAL_TOKENS.EOS.value],
+                                        device=DEVICE)
 state_dict = torch.load(options.modelckpt, map_location='cpu')
 model.load_state_dict(state_dict)
 model.to(DEVICE)
 
 import ipdb;ipdb.set_trace()
 # generate answers model
-_generate(options, model, test_loader, tokenizer, DEVICE)
+_generate(options, model, test_loader, idx2word, DEVICE)
 
 # calc and print metrics
 #calc_test_ppl(model, test_loader, DEVICE)
