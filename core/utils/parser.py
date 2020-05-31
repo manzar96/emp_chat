@@ -8,7 +8,7 @@ def get_train_parser():
         "--dataset-name",
         type=str,
         default="empchat",
-        choices=["reddit", "empchat", "dailydialog"],
+        choices=["reddit", "empchat", "dailydialog","persona"],
         help="Data to train/eval on",
     )
     parser.add_argument(
