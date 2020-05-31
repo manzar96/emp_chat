@@ -11,7 +11,9 @@ from core.utils.vocab import word2idx_from_dataset, Vocab
 from core.utils.embeddings import EmbeddingsLoader, create_emb_file
 from core.utils.tokens import DIALOG_SPECIAL_TOKENS
 from core.data.empdataset import EmpatheticDataset
-from core.data.collators import TransformerVaswaniCollator
+from core.data.persona import PersonaChatDataset
+from core.data.collators import TransformerVaswaniCollatorEmpChat, \
+    TransformerVaswaniCollatorPersChat
 from core.modules.loss import SequenceCrossEntropyLoss
 from core.utils.transforms import DialogSpacyTokenizer,ToTensor, ToTokenIds
 from core.trainers import TransformerVaswaniTrainer
@@ -32,6 +34,9 @@ print(options)
 if options.dataset_name == "empchat":
     train_dataset = EmpatheticDataset("train", options.max_hist_len)
     val_dataset = EmpatheticDataset("valid", options.max_hist_len)
+elif "persona":
+    train_dataset = PersonaChatDataset("train", options.max_hist_len)
+    val_dataset = PersonaChatDataset("valid", options.max_hist_len)
 else:
     raise NotImplementedError
 
@@ -82,7 +87,11 @@ train_dataset = train_dataset.map(tokenizer).map(to_tokens_ids).map(to_tensor)
 val_dataset = val_dataset.map(tokenizer).map(to_tokens_ids).map(to_tensor)
 
 # load data
-collator_fn = TransformerVaswaniCollator(device='cpu')
+if options.dataset_name == "empchat":
+    collator_fn = TransformerVaswaniCollatorEmpChat(device='cpu')
+elif "persona":
+    collator_fn = TransformerVaswaniCollatorPersChat(device='cpu')
+
 train_loader = DataLoader(train_dataset, batch_size=options.batch_size,
                           drop_last=False, shuffle=True,
                           collate_fn=collator_fn)
