@@ -3,13 +3,15 @@ from datetime import datetime
 import json
 import logging
 import os
+import pickle
 import tarfile
 import tempfile
 import socket
 #from pytorch_transformers import cached_path
 from transformers import cached_path
 import torch
-
+import numpy as np
+from torch.utils.data import Dataset
 
 
 
@@ -40,8 +42,89 @@ def get_dataset(tokenizer, dataset_path, dataset_cache):
         #         return dict((n, tokenize(o)) for n, o in obj.items())
         #     return list(tokenize(o) for o in obj)
         # dataset = tokenize(dataset)
-        # torch.save(dataset, dataset_cache)
+        pickle.dump(dataset,
+                    open('./data/Pesonachat_s3_amazonaws/personachat.pkl',
+                         "wb"))
     return dataset
 
+
+class PersonaChatDataset(Dataset):
+
+    def __init__(self, splitname, maxhistorylen):
+        self.dataset_dict = pickle.load(open(
+            './data/Pesonachat_s3_amazonaws/personachat.pkl', 'rb'))
+
+        self.splitname = splitname
+        self.maxhistorylen = maxhistorylen
+        self.persona, self.data = self.get_data()
+        self.transforms = []
+
+    def get_data(self):
+        self.data_list = self.dataset_dict[self.splitname]
+        persona = []
+        data = []
+
+        for index, dialog in enumerate(self.data_list):
+            personality = dialog['personality']
+            for turn in dialog['utterances']:
+                cands = turn['candidates']
+                hist = turn['history']
+                hist = " </s> ".join(hist[-self.maxhistorylen:])
+                # use this if we want to cut some samples according to
+                # history len
+                # if len(hist)>10:...
+
+                persona.append(personality)
+                # add to data last history turns and answer
+                # from candidate answers we take as correct answer the last one
+                data.append((hist, cands[-1]))
+        return persona, data
+
+    def map(self, t):
+        self.transforms.append(t)
+        return self
+
+    def word_counts(self, tokenizer=None):
+        voc_counts = {}
+        for question, answer in self.data:
+            if tokenizer is None:
+                words, counts = np.unique(np.array(question.split(' ')),
+                                          return_counts=True)
+            else:
+                words, counts = np.unique(np.array(tokenizer(question)),
+                                          return_counts=True)
+            for word, count in zip(words, counts):
+                if word not in voc_counts.keys():
+                    voc_counts[word] = count
+                else:
+                    voc_counts[word] += count
+
+            if tokenizer is None:
+                words, counts = np.unique(np.array(answer.split(' ')),
+                                          return_counts=True)
+            else:
+                words, counts = np.unique(np.array(tokenizer(answer)),
+                                          return_counts=True)
+            for word, count in zip(words, counts):
+                if word not in voc_counts.keys():
+                    voc_counts[word] = count
+                else:
+                    voc_counts[word] += count
+
+        return voc_counts
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, index):
+        personality = self.persona[index]
+        hist, ans = self.data[index]
+        for t in self.transforms:
+            hist = t(hist)
+            ans = t(ans)
+        # we dont use personality! if we want to return add below!
+        return hist, ans
+
 if __name__=="__main__":
-    mydataset = get_dataset(None,PERSONACHAT_URL,None)
+    mydataset = PersonaChatDataset(splitname='train',maxhistorylen=4)
+    import ipdb;ipdb.set_trace()
