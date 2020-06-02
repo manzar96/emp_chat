@@ -46,29 +46,38 @@ tokenizer = DialogSpacyTokenizer(lower=True, append_eos=True,
 # create dictionary with word counts
 word_counts = train_dataset.word_counts(tokenizer)
 
-if options.embeddings is not None:
-    # TODO: na to kanw swsta! prepei na parw prwta gia oles tis lekseis ta
-    #  embs kai meta na kratisw tis most frequent!
-    # load embeddings (if given) and keep most frequent in Dataset
-    new_emb_file = './cache/new_embs.txt'
-    old_emb_file = options.embeddings
-    freq_words_file = './cache/freq_words.txt'
-    create_emb_file(new_emb_file, old_emb_file, freq_words_file, word_counts,
-                    most_freq=19000)
-    word2idx, idx2word, embeddings = EmbeddingsLoader(new_emb_file,
-                                                      options.embeddings_size,
-                                                      extra_tokens=
-                                                      DIALOG_SPECIAL_TOKENS
-                                                      ).load()
-    options.embeddings_size = embeddings.shape[1]
-
+if options.pretrained:
+    if options.vocabckpt is None:
+        assert False, "you should set vocabckpt folder for pretrained models"
+    else:
+        file1 = open(os.path.join(options.vocabckpt, 'word2idx.pkl'), "rb")
+        file2 = open(os.path.join(options.vocabckpt, 'idx2word.pkl'), "rb")
+        word2idx = pickle.load(file1)
+        idx2word = pickle.load(file2)
 else:
-    # we create a dictionary from the dataset keeping again most frequent words
-    word2idx, idx2word = word2idx_from_dataset(word_counts,
-                                               most_freq=19000,
-                                               extra_tokens=
-                                               DIALOG_SPECIAL_TOKENS)
-    embeddings = None
+    if options.embeddings is not None:
+        # TODO: na to kanw swsta! prepei na parw prwta gia oles tis lekseis ta
+        #  embs kai meta na kratisw tis most frequent!
+        # load embeddings (if given) and keep most frequent in Dataset
+        new_emb_file = './cache/new_embs.txt'
+        old_emb_file = options.embeddings
+        freq_words_file = './cache/freq_words.txt'
+        create_emb_file(new_emb_file, old_emb_file, freq_words_file, word_counts,
+                        most_freq=19000)
+        word2idx, idx2word, embeddings = EmbeddingsLoader(new_emb_file,
+                                                          options.embeddings_size,
+                                                          extra_tokens=
+                                                          DIALOG_SPECIAL_TOKENS
+                                                          ).load()
+        options.embeddings_size = embeddings.shape[1]
+
+    else:
+        # we create a dictionary from the dataset keeping again most frequent words
+        word2idx, idx2word = word2idx_from_dataset(word_counts,
+                                                   most_freq=19000,
+                                                   extra_tokens=
+                                                   DIALOG_SPECIAL_TOKENS)
+        embeddings = None
 
 if not os.path.exists(options.ckpt):
     os.makedirs(options.ckpt)

@@ -33,7 +33,6 @@ def get_dataset(tokenizer, dataset_path, dataset_cache):
         print(personachat_file)
         with open(personachat_file, "r", encoding="utf-8") as f:
             dataset = json.loads(f.read())
-        import ipdb;ipdb.set_trace()
         # logger.info("Tokenize and encode the dataset")
         # def tokenize(obj):
         #     if isinstance(obj, str):
@@ -126,5 +125,7 @@ class PersonaChatDataset(Dataset):
         return hist, ans
 
 if __name__=="__main__":
+    # call below to generate dataset pickle
+    #get_dataset(None, PERSONACHAT_URL, None)
     mydataset = PersonaChatDataset(splitname='train',maxhistorylen=4)
     import ipdb;ipdb.set_trace()

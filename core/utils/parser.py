@@ -39,6 +39,18 @@ def get_train_parser():
     )
 
     parser.add_argument(
+        "--vocabckpt",
+        type=str,
+        help="Checkpoint folder to load vocabulary. (set when pretrained True)",
+    )
+    parser.add_argument(
+        "--pretrained",
+        default=False,
+        action='store_true',
+        help="Set if a pretrained model is used ",
+    )
+
+    parser.add_argument(
         "--max-hist-len",
         type=int,
         default=4,
