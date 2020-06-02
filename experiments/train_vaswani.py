@@ -54,6 +54,7 @@ if options.pretrained:
         file2 = open(os.path.join(options.vocabckpt, 'idx2word.pkl'), "rb")
         word2idx = pickle.load(file1)
         idx2word = pickle.load(file2)
+        embeddings = None # we dont mind for setting none as we load the model!
 else:
     if options.embeddings is not None:
         # TODO: na to kanw swsta! prepei na parw prwta gia oles tis lekseis ta
