@@ -1,26 +1,22 @@
 import torch
 from tqdm import tqdm
 from torch.utils.data import DataLoader
-from transformers import BertTokenizer,EncoderDecoderModel,GPT2Model
+from transformers import GPT2Config, GPT2Tokenizer, GPT2LMHeadModel
 
 from core.utils.parser import get_test_parser
 from core.models.huggingface.parser import add_cmdline_args_gen
 from core.data.empdataset import EmpatheticDataset
-from core.data.collators import Bert2BertCollator
+from core.data.collators import GPT2Collator
 from core.utils.transforms import ToTensor
-from core.utils.tensors import from_checkpoint, to_device
+from core.utils.tensors import to_device
 
 
-def _generate(options,model,test_loader,device):
+def _generate(options,model,test_loader,tokenizer,device):
 
-    for index,batch in enumerate(tqdm(test_loader)):
+    for index, batch in enumerate(tqdm(test_loader)):
         inputs = to_device(batch[0], device=device)
-        inputs_lens = to_device(batch[1], device=device)
-        inputs_att = to_device(batch[2], device=device)
-        targets = to_device(batch[3], device=device)
-        targets_lens = to_device(batch[4], device=device)
-        targets_att = to_device(batch[5], device=device)
-        import ipdb;ipdb.set_trace()
+        inputs_att = to_device(batch[1], device=device)
+
         output = model.generate(input_ids=inputs,
                        attention_mask=inputs_att,
                        max_length=50,
@@ -38,6 +34,7 @@ def _generate(options,model,test_loader,device):
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 print(DEVICE)
 
+
 # get args from cmdline
 parser = get_test_parser()
 parser = add_cmdline_args_gen(parser)
@@ -50,7 +47,7 @@ else:
     raise NotImplementedError
 
 # make transforms
-tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
 tokenize = lambda x: tokenizer.tokenize(x)
 to_tokens_ids = lambda x: tokenizer.convert_tokens_to_ids(x)
 to_tensor = ToTensor()
@@ -61,16 +58,17 @@ transforms = [tokenize, to_tokens_ids, to_tensor]
 test_dataset = test_dataset.map(tokenize).map(to_tokens_ids).map(to_tensor)
 
 # load test data
-collator_fn = Bert2BertCollator(device='cpu')
+collator_fn = GPT2Collator(device='cpu')
 test_loader = DataLoader(test_dataset, batch_size=options.batch_size,
                          drop_last=False, shuffle=True, collate_fn=collator_fn)
 
 
 # load model from checkpoint
-model = EncoderDecoderModel.from_encoder_decoder_pretrained(
-    'bert-base-uncased', 'bert-base-uncased')
-# model = from_checkpoint(options.modelckpt, model, map_location='cpu')
-# model = model.to(DEVICE)
+model = GPT2LMHeadModel.from_pretrained('gpt2')
+state_dict = torch.load(options.ckpt, map_location='cpu')
+model.load_state_dict(state_dict)
 model.to(DEVICE)
+
+import ipdb;ipdb.set_trace()
 # test model
-_generate(options,model,test_loader,DEVICE)
+_generate(options,model,test_loader,tokenizer,DEVICE)
