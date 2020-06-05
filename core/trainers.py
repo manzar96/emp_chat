@@ -751,7 +751,6 @@ class BertForClassificationTrainer:
                     self.scheduler.step()
             avg_train_loss = avg_train_loss / len(train_loader)
             avg_acc = float(avg_acc) / len(train_loader)
-            import ipdb;ipdb.set_trace()
             avg_val_loss, avg_val_acc = self.calc_val_loss(val_loader)
 
 
