@@ -115,7 +115,61 @@ class EmpatheticDataset(Dataset):
         return self.ids[index]
 
 
+class EmpatheticDatasetEmoClassification(Dataset):
+
+    def __init__(self, splitname):
+        self.csvfile = os.path.join("data/empatheticdialogues",
+                                    f"{splitname}.csv")
+        self.data = self.read_data()
+        self.label2idx, self.idx2label = self.get_labels_dict()
+        self.transforms = []
+
+    def read_data(self):
+        data = []
+        samples = {}
+        lines = open(self.csvfile).readlines()
+
+        for i in range(1, len(lines)):
+            sparts = lines[i].strip().split(",")
+
+            if sparts[0] in samples.keys():
+                continue
+            else:
+                # we dont have seen again this dialog so we add to samples!
+                situation = sparts[3].replace("_comma_", ",")
+                data.append((situation, sparts[2]))
+                samples[sparts[0]] = "ok"
+
+        return data
+
+    def get_labels_dict(self):
+        label2idx = {}
+        idx2label = {}
+        counter = 0
+        for data in self.data:
+            sentence,emo = data
+            if emo not in label2idx:
+                label2idx[emo] = counter
+                idx2label[counter] = emo
+                counter += 1
+        return label2idx, idx2label
+
+    def map(self, t):
+        self.transforms.append(t)
+        return self
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, index):
+        sent, label = self.data[index]
+        for t in self.transforms:
+            sent = t(sent)
+        label = mktensor(self.label2idx[label])
+        return sent, label
+
+
 if __name__ == "__main__":
 
-    train_dataset = EmpatheticDataset('train', 10)
+    train_dataset = EmpatheticDatasetEmoClassification('train')
     import ipdb;ipdb.set_trace()
