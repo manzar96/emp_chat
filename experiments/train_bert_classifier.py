@@ -2,7 +2,7 @@ import math
 import torch
 import torch.nn as nn
 from tqdm import tqdm
-from torch.optim import Adam,SGD
+from torch.optim import Adam,SGD,AdamW
 from torch.utils.data import DataLoader
 from transformers import BertTokenizer,BertForSequenceClassification
 from core.models.bert_classifier import BertClassifier
@@ -50,7 +50,9 @@ val_loader = DataLoader(val_dataset, batch_size=options.batch_size,
                           collate_fn=collator_fn)
 
 # create model
-model = BertClassifier(num_classes=32)
+#model = BertClassifier(num_classes=32)
+model = BertForSequenceClassification.from_pretrained('bert-base-uncased',
+                                                      num_labels=32)
 if options.modelckpt is not None:
     state_dict = torch.load(options.modelckpt, map_location='cpu')
     model.load_state_dict(state_dict)
@@ -62,7 +64,7 @@ train_numparams = sum([p.numel() for p in model.parameters() if
                        p.requires_grad])
 print('Total Parameters: {}'.format(numparams))
 print('Trainable Parameters: {}'.format(train_numparams))
-optimizer = SGD(
+optimizer = AdamW(
     [p for p in model.parameters() if p.requires_grad],
     lr=options.lr, weight_decay=1e-6)
 #run with lr 0.001

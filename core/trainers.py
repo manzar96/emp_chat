@@ -669,8 +669,7 @@ class BertForClassificationTrainer:
                 inputs = to_device(batch[0], device=self.device)
                 inputs_att = to_device(batch[1], device=self.device)
                 labels = to_device(batch[2], device=self.device)
-                logits = self.model(inputs)
-                loss = self.criterion(logits, labels)
+                loss, logits = self.model(inputs, labels=labels)
                 # calculate acc
                 preds = nn.functional.log_softmax(logits, dim=-1)
                 _, preds = torch.max(preds, dim=-1)
@@ -680,7 +679,7 @@ class BertForClassificationTrainer:
 
             avg_val_loss = avg_val_loss / len(val_loader)
             acc_val = float(acc_val) / len(val_loader)
-            return avg_val_loss , acc_val
+            return avg_val_loss, acc_val
 
     def print_epoch(self, epoch, avg_train_epoch_loss, avg_val_epoch_loss,
                     cur_patience, strt):
@@ -710,8 +709,7 @@ class BertForClassificationTrainer:
         inputs = to_device(batch[0], device=self.device)
         inputs_att = to_device(batch[1], device=self.device)
         labels = to_device(batch[2], device=self.device)
-        logits = self.model(inputs)
-        loss = self.criterion(logits, labels)
+        loss,logits = self.model(inputs,labels = labels)
         # calculate accuracy
         preds = nn.functional.log_softmax(logits, dim=-1)
         _,preds = torch.max(preds, dim=-1)
