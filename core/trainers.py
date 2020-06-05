@@ -669,11 +669,14 @@ class BertForClassificationTrainer:
                 inputs = to_device(batch[0], device=self.device)
                 inputs_att = to_device(batch[1], device=self.device)
                 labels = to_device(batch[2], device=self.device)
-                loss, logits = self.model(inputs, labels=labels)
+                loss, logits = self.model(inputs,
+                                          token_type_ids=None,
+                                          attention_mask=inputs_att,
+                                          labels=labels)
                 # calculate acc
                 preds = nn.functional.log_softmax(logits, dim=-1)
                 _, preds = torch.max(preds, dim=-1)
-                acc = sum(preds == labels)
+                acc = float(sum(preds == labels)) / inputs.shape[0]
                 avg_val_loss += loss.item()
                 acc_val += acc.item()
 
@@ -709,11 +712,14 @@ class BertForClassificationTrainer:
         inputs = to_device(batch[0], device=self.device)
         inputs_att = to_device(batch[1], device=self.device)
         labels = to_device(batch[2], device=self.device)
-        loss,logits = self.model(inputs,labels = labels)
+        loss, logits = self.model(inputs,
+                                  token_type_ids=None,
+                                  attention_mask=inputs_att,
+                                  labels=labels)
         # calculate accuracy
         preds = nn.functional.log_softmax(logits, dim=-1)
         _,preds = torch.max(preds, dim=-1)
-        acc = sum(preds == labels)
+        acc = float(sum(preds == labels)) / inputs.shape[0]
         return loss, acc
 
     def train_epochs(self, n_epochs, train_loader, val_loader):
@@ -741,8 +747,11 @@ class BertForClassificationTrainer:
                     torch.nn.utils.clip_grad_norm_(self.model.parameters(),
                                                    self.clip)
                 self.optimizer.step()
+                if self.scheduler:
+                    self.scheduler.step()
             avg_train_loss = avg_train_loss / len(train_loader)
             avg_acc = float(avg_acc) / len(train_loader)
+            import ipdb;ipdb.set_trace()
             avg_val_loss, avg_val_acc = self.calc_val_loss(val_loader)
 
 
