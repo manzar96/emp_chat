@@ -4,7 +4,8 @@ import torch.nn as nn
 from tqdm import tqdm
 from torch.optim import Adam,SGD,AdamW
 from torch.utils.data import DataLoader
-from transformers import BertTokenizer,BertForSequenceClassification
+from transformers import BertTokenizer,BertForSequenceClassification,\
+    XLNetForSequenceClassification,RobertaForSequenceClassification,XLNetTokenizer
 from core.models.bert_classifier import BertClassifier
 
 from core.utils.parser import get_train_parser
@@ -29,7 +30,7 @@ else:
     raise NotImplementedError
 
 # make transforms
-tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+tokenizer = XLNetTokenizer.from_pretrained('xlnet-base-cased')
 tokenize = lambda x: tokenizer.tokenize(x)
 to_tokens_ids = lambda x: tokenizer.convert_tokens_to_ids(x)
 to_tensor = ToTensor()
@@ -51,7 +52,7 @@ val_loader = DataLoader(val_dataset, batch_size=options.batch_size,
 
 # create model
 #model = BertClassifier(num_classes=32)
-model = BertForSequenceClassification.from_pretrained('bert-base-uncased',
+model = XLNetForSequenceClassification.from_pretrained('xlnet-base-cased',
                                                       num_labels=32)
 if options.modelckpt is not None:
     state_dict = torch.load(options.modelckpt, map_location='cpu')
