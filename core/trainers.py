@@ -637,3 +637,127 @@ class TransformerVaswaniTrainerMultitask:
 
     def fit(self, train_loader, val_loader, epochs):
         self.train_epochs(epochs, train_loader, val_loader)
+
+
+class BertForClassificationTrainer:
+
+    def __init__(self, model,
+                 optimizer,
+                 criterion,
+                 patience,
+                 scheduler=None,
+                 checkpoint_dir=None,
+                 clip=None,
+                 device='cpu'):
+
+        self.model = model.to(device)
+        self.criterion = criterion
+        self.optimizer = optimizer
+        self.scheduler = scheduler
+        self.checkpoint_dir = checkpoint_dir
+        self.clip = clip
+        self.device = device
+        self.patience = patience
+
+    def calc_val_loss(self, val_loader):
+
+        self.model.eval()
+        with torch.no_grad():
+            avg_val_loss = 0
+            acc_val = 0
+            for index, batch in enumerate(tqdm(val_loader)):
+                inputs = to_device(batch[0], device=self.device)
+                inputs_att = to_device(batch[1], device=self.device)
+                labels = to_device(batch[2], device=self.device)
+                logits = self.model(inputs)
+                loss = self.criterion(logits, labels)
+                # calculate acc
+                preds = nn.functional.log_softmax(logits, dim=-1)
+                _, preds = torch.max(preds, dim=-1)
+                acc = sum(preds == labels)
+                avg_val_loss += loss.item()
+                acc_val += acc.item()
+
+            avg_val_loss = avg_val_loss / len(val_loader)
+            acc_val = float(acc_val) / len(val_loader)
+            return avg_val_loss , acc_val
+
+    def print_epoch(self, epoch, avg_train_epoch_loss, avg_val_epoch_loss,
+                    cur_patience, strt):
+
+        print("Epoch {}:".format(epoch+1))
+        print("Train loss: {}".format(
+            avg_train_epoch_loss ))
+        print("Val loss: {}".format(avg_val_epoch_loss))
+        print("Patience left: {}".format(self.patience-cur_patience))
+        print("Time: {} mins".format((time.time() - strt) / 60.0))
+        print("++++++++++++++++++")
+
+    def save_epoch(self, epoch, loss=None):
+
+        if not os.path.exists(self.checkpoint_dir):
+            os.makedirs(self.checkpoint_dir)
+        torch.save(self.model.state_dict(), os.path.join(
+            self.checkpoint_dir, '{}_{}.pth'.format(epoch, 'model_checkpoint')))
+        torch.save(self.optimizer.state_dict(), os.path.join(
+            self.checkpoint_dir, '{}_{}.pth'.format(epoch,
+                                                    'optimizer_checkpoint')))
+
+    def train_step(self, batch):
+        self.model.train()
+        self.optimizer.zero_grad()
+
+        inputs = to_device(batch[0], device=self.device)
+        inputs_att = to_device(batch[1], device=self.device)
+        labels = to_device(batch[2], device=self.device)
+        logits = self.model(inputs)
+        loss = self.criterion(logits, labels)
+        # calculate accuracy
+        preds = nn.functional.log_softmax(logits, dim=-1)
+        _,preds = torch.max(preds, dim=-1)
+        acc = sum(preds == labels)
+        return loss, acc
+
+    def train_epochs(self, n_epochs, train_loader, val_loader):
+
+        best_val_loss, cur_patience = 10000, 0
+
+        print("Training model....")
+        self.model.train()
+
+        for epoch in range(n_epochs):
+            if cur_patience == self.patience:
+                break
+
+            avg_train_loss = 0
+            avg_acc = 0
+            strt = time.time()
+
+            for index, sample_batch in enumerate(tqdm(train_loader)):
+
+                loss, acc = self.train_step(sample_batch)
+                avg_train_loss += loss.item()
+                avg_acc += acc
+                loss.backward(retain_graph=False)
+                if self.clip is not None:
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(),
+                                                   self.clip)
+                self.optimizer.step()
+            avg_train_loss = avg_train_loss / len(train_loader)
+            avg_acc = float(avg_acc) / len(train_loader)
+            avg_val_loss, avg_val_acc = self.calc_val_loss(val_loader)
+
+
+            if avg_val_loss < best_val_loss:
+                self.save_epoch(epoch)
+                best_val_loss = avg_val_loss
+                cur_patience = 0
+            else:
+                cur_patience += 1
+            self.print_epoch(epoch, avg_train_loss, avg_val_loss,
+                             cur_patience, strt)
+            print("train acc: {}".format(avg_acc))
+            print("val acc: {}".format(avg_val_acc))
+
+    def fit(self, train_loader, val_loader, epochs):
+        self.train_epochs(epochs, train_loader, val_loader)
