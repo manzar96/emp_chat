@@ -700,10 +700,9 @@ class BertForClassificationTrainer:
         if not os.path.exists(self.checkpoint_dir):
             os.makedirs(self.checkpoint_dir)
         torch.save(self.model.state_dict(), os.path.join(
-            self.checkpoint_dir, '{}_{}.pth'.format(epoch, 'model_checkpoint')))
+            self.checkpoint_dir, '{}.pth'.format('model_checkpoint')))
         torch.save(self.optimizer.state_dict(), os.path.join(
-            self.checkpoint_dir, '{}_{}.pth'.format(epoch,
-                                                    'optimizer_checkpoint')))
+            self.checkpoint_dir, '{}.pth'.format('optimizer_checkpoint')))
 
     def train_step(self, batch):
         self.model.train()
