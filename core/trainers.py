@@ -676,9 +676,9 @@ class BertForClassificationTrainer:
                 # calculate acc
                 preds = nn.functional.log_softmax(logits, dim=-1)
                 _, preds = torch.max(preds, dim=-1)
-                acc = float(sum(preds == labels)) / inputs.shape[0]
+                acc = float(sum(preds == labels).item()) / inputs.shape[0]
                 avg_val_loss += loss.item()
-                acc_val += acc.item()
+                acc_val += acc
 
             avg_val_loss = avg_val_loss / len(val_loader)
             acc_val = float(acc_val) / len(val_loader)
@@ -719,7 +719,7 @@ class BertForClassificationTrainer:
         # calculate accuracy
         preds = nn.functional.log_softmax(logits, dim=-1)
         _,preds = torch.max(preds, dim=-1)
-        acc = float(sum(preds == labels)) / inputs.shape[0]
+        acc = float(sum(preds == labels).item()) / inputs.shape[0]
         return loss, acc
 
     def train_epochs(self, n_epochs, train_loader, val_loader):
