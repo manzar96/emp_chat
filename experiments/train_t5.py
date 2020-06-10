@@ -7,7 +7,8 @@ from transformers import T5Tokenizer, T5ForConditionalGeneration
 
 from core.utils.parser import get_train_parser
 from core.data.empdataset import EmpatheticDataset
-from core.data.collators import T5Collator
+from core.data.persona import PersonaChatDataset
+from core.data.collators import T5Collator,TransformerVaswaniCollatorEmpChat,TransformerVaswaniCollatorPersChat
 from core.utils.transforms import ToTensor
 from core.trainers import T5TransformerTrainer
 
@@ -23,6 +24,9 @@ options = parser.parse_args()
 if options.dataset_name == "empchat":
     train_dataset = EmpatheticDataset("train", options.max_hist_len)
     val_dataset = EmpatheticDataset("valid", options.max_hist_len)
+elif "persona":
+    train_dataset = PersonaChatDataset("train", options.max_hist_len)
+    val_dataset = PersonaChatDataset("valid", options.max_hist_len)
 else:
     raise NotImplementedError
 
@@ -41,7 +45,13 @@ val_dataset = val_dataset.map(appender).map(tokenize).map(to_tokens_ids).map(
     to_tensor)
 
 # load data
-collator_fn = T5Collator(device='cpu')
+#collator_fn = T5Collator(device='cpu')
+
+if options.dataset_name == "empchat":
+    collator_fn = TransformerVaswaniCollatorEmpChat(device='cpu')
+elif "persona":
+    collator_fn = TransformerVaswaniCollatorPersChat(device='cpu')
+
 train_loader = DataLoader(train_dataset, batch_size=options.batch_size,
                           drop_last=False, shuffle=True,
                           collate_fn=collator_fn)
