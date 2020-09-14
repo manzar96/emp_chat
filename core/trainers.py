@@ -10,7 +10,7 @@ import random
 
 TrainerType = TypeVar('TrainerType', bound='Trainer')
 
-
+from core.modules.loss import SequenceCrossEntropyLoss
 class EncoderDecoderTransformerTrainer:
 
     def __init__(self, model,
@@ -28,6 +28,8 @@ class EncoderDecoderTransformerTrainer:
         self.clip = clip
         self.device = device
         self.patience = patience
+        self.crit = SequenceCrossEntropyLoss(pad_idx=-100)
+
 
     def calc_val_loss(self, val_loader):
 
@@ -99,6 +101,7 @@ class EncoderDecoderTransformerTrainer:
         lm_loss = outputs[0]
         pred_scores = outputs[1]
         last_hidden = outputs[2]
+        self.crit(pred_scores,replaced_targets)
         import ipdb;ipdb.set_trace()
         return lm_loss, last_hidden
 
