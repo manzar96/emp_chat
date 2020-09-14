@@ -82,10 +82,10 @@ model.config.max_length = 142
 model.config.min_length = 56
 
 #freeze some layers:
-for i in range(0,12):
-    for p in model.encoder.encoder.layer[i].parameters():
-        if p.requires_grad:
-            p.requires_grad = False
+# for i in range(0,12):
+#     for p in model.encoder.encoder.layer[i].parameters():
+#         if p.requires_grad:
+#             p.requires_grad = False
 
 # params and optimizer
 numparams = sum([p.numel() for p in model.parameters()])
