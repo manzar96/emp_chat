@@ -3,11 +3,12 @@ import numpy as np
 from core.utils.tensors import mktensor
 from torch.utils.data import Dataset
 from transformers import BertTokenizer
-
+import torch
 
 class EmpatheticDataset(Dataset):
 
-    def __init__(self, splitname, maxhistorylen):
+    def __init__(self, splitname, maxhistorylen, tokenizer_hist=None,
+                 tokenizer_ans=None):
         self.csvfile = os.path.join("data/empatheticdialogues",
                                     f"{splitname}.csv")
         self.maxhistorylen = maxhistorylen
@@ -15,7 +16,11 @@ class EmpatheticDataset(Dataset):
         self.data, self.ids = self.read_data()
         self.label2idx, self.idx2label = self.get_labels_dict()
         self.transforms = []
-        self.tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+        # we use different tokenizers for context and answers in case its
+        # needed!
+        self.tokenizer_hist = tokenizer_hist
+        self.tokenizer_ans = tokenizer_ans
+
 
     def read_data(self):
         data = []
@@ -105,9 +110,15 @@ class EmpatheticDataset(Dataset):
 
     def __getitem__(self, index):
         hist, ans, label = self.data[index]
-        for t in self.transforms:
-            hist = t(hist)
-            ans = t(ans)
+        if self.transforms == []:
+            hist = self.tokenizer_hist(hist)
+            ans = self.tokenizer_ans(ans)
+            hist = mktensor(hist['input_ids'],dtype=torch.long)
+            ans = mktensor(ans['input_ids'],dtype=torch.long)
+        else:
+            for t in self.transforms:
+                hist = t(hist)
+                ans = t(ans)
         label = mktensor(self.label2idx[label])
         return hist, ans, label
 
