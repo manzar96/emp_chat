@@ -62,6 +62,12 @@ if options.modelckpt is not None:
     model.load_state_dict(state_dict)
 model.to(DEVICE)
 
+# #freeze some layers:
+# for i in range(0,12):
+#     for p in model.encoder.encoder.layer[i].parameters():
+#         if p.requires_grad:
+#             p.requires_grad = False
+
 # params and optimizer
 numparams = sum([p.numel() for p in model.parameters()])
 train_numparams = sum([p.numel() for p in model.parameters() if
