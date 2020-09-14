@@ -46,7 +46,7 @@ class EncoderDecoderTransformerTrainer:
                                      attention_mask=inputs_att,
                                      decoder_input_ids=padded_targets,
                                      decoder_attention_mask=targets_att,
-                                     lm_labels=padded_targets)
+                                     labels=replaced_targets)
                 lm_loss = outputs[0]
                 pred_scores = outputs[1]
                 last_hidden = outputs[2]
