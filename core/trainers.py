@@ -97,6 +97,7 @@ class EncoderDecoderTransformerTrainer:
                              labels=replaced_targets)
 
         lm_loss = outputs[0]
+        print(lm_loss)
         pred_scores = outputs[1]
         last_hidden = outputs[2]
         return lm_loss, last_hidden

@@ -3,7 +3,7 @@ import torch
 from tqdm import tqdm
 from torch.optim import Adam
 from torch.utils.data import DataLoader
-from transformers import BertTokenizer,EncoderDecoderModel
+from transformers import BertTokenizer,EncoderDecoderModel,EncoderDecoderConfig
 
 from core.utils.parser import get_train_parser
 from core.data.empdataset import EmpatheticDataset
@@ -32,7 +32,11 @@ tokenize = lambda x: tokenizer.tokenize(x)
 to_tokens_ids = lambda x: tokenizer.convert_tokens_to_ids(x)
 to_tensor = ToTensor()
 transforms = [tokenize, to_tokens_ids, to_tensor]
-# TODO: set bos_index, eos_index sto bert tokenizer apo special tokens
+# CLS token will work as BOS token
+tokenizer.bos_token = tokenizer.cls_token
+# SEP token will work as EOS token
+tokenizer.eos_token = tokenizer.sep_token
+# TODO: set bos_index, eos_index sto bert tokenizer apo secial tokens
 
 # transform dataset
 train_dataset = train_dataset.map(tokenize).map(to_tokens_ids).map(to_tensor)
