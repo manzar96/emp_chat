@@ -86,12 +86,20 @@ class EncoderDecoderTransformerTrainer:
         padded_targets = to_device(batch[2], device=self.device)
         replaced_targets = to_device(batch[3], device=self.device)
         targets_att = to_device(batch[4], device=self.device)
+        # edw den ipologizoume loss ara vazw ta kanonika targets
+        # an omws ithela na mou girisei kai loss tote tha evaza ta
+        # replaced_targets sto lm_labels
 
+        # episis den eimai sigouros gia to ti prepei na dwsw san
+        # decoder_input_ids (ta input ids i ta padded_targets??)
+        import ipdb;ipdb.set_trace()
         outputs = self.model(input_ids=inputs,
                              attention_mask=inputs_att,
                              decoder_input_ids=padded_targets,
                              decoder_attention_mask=targets_att,
                              lm_labels=padded_targets)
+
+        import ipdb;ipdb.set_trace()
         lm_loss = outputs[0]
         pred_scores = outputs[1]
         last_hidden = outputs[2]
