@@ -29,6 +29,7 @@ class EncoderDecoderTransformerTrainer:
         self.device = device
         self.patience = patience
         self.crit = SequenceCrossEntropyLoss(pad_idx=-100)
+        self.crit2 = SequenceCrossEntropyLoss(pad_idx=0)
 
 
     def calc_val_loss(self, val_loader):
@@ -101,7 +102,9 @@ class EncoderDecoderTransformerTrainer:
         lm_loss = outputs[0]
         pred_scores = outputs[1]
         last_hidden = outputs[2]
-        self.crit(pred_scores,replaced_targets)
+        print(self.crit(pred_scores, replaced_targets))
+        print(self.crit2(pred_scores, padded_targets))
+        print(lm_loss)
         import ipdb;ipdb.set_trace()
         return lm_loss, last_hidden
 
