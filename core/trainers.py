@@ -97,9 +97,9 @@ class EncoderDecoderTransformerTrainer:
                              labels=replaced_targets)
 
         lm_loss = outputs[0]
-        print(lm_loss)
         pred_scores = outputs[1]
         last_hidden = outputs[2]
+        import ipdb;ipdb.set_trace()
         return lm_loss, last_hidden
 
     def train_epochs(self, n_epochs, train_loader, val_loader):
