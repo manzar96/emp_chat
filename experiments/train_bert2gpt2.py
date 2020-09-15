@@ -8,7 +8,9 @@ from transformers import BertTokenizer, GPT2Tokenizer, EncoderDecoderModel,\
 
 from core.utils.parser import get_train_parser
 from core.data.empdataset import EmpatheticDataset
-from core.data.collators import EncoderDecoderTransformerCollator
+from core.data.persona import PersonaChatDataset
+from core.data.collators import EncoderDecoderTransformerCollatorEmpChat, \
+    EncoderDecoderTransformerCollatorPersChat
 from core.utils.transforms import ToTensor
 from core.trainers import EncoderDecoderTransformerTrainer
 
@@ -24,8 +26,12 @@ options = parser.parse_args()
 if options.dataset_name == "empchat":
     train_dataset = EmpatheticDataset("train", options.max_hist_len)
     val_dataset = EmpatheticDataset("valid", options.max_hist_len)
+elif options.dataset_name =="persona":
+    train_dataset = PersonaChatDataset("train", options.max_hist_len)
+    val_dataset = PersonaChatDataset("valid", options.max_hist_len)
 else:
     raise NotImplementedError
+
 
 # make transforms using only bert tokenizer!
 bert_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
@@ -57,7 +63,10 @@ val_dataset.tokenizer_hist = bert_tokenizer
 val_dataset.tokenizer_ans = gpt2_tokenizer
 
 # load data
-collator_fn = EncoderDecoderTransformerCollator(device='cpu')
+if options.dataset_name == "empchat":
+    collator_fn = EncoderDecoderTransformerCollatorEmpChat(device='cpu')
+elif "persona":
+    collator_fn = EncoderDecoderTransformerCollatorPersChat(device='cpu')
 train_loader = DataLoader(train_dataset, batch_size=options.batch_size,
                           drop_last=False, shuffle=True,
                           collate_fn=collator_fn)
