@@ -11,7 +11,7 @@ from sentence_transformers import SentenceTransformer
 
 from core.utils.parser import get_test_parser
 from core.models.huggingface.parser import add_cmdline_args_gen
-from core.data.collators import EncoderDecoderTransformerCollator
+from core.data.collators import EncoderDecoderTransformerCollatorEmpChat
 from core.data.empdataset import EmpatheticDataset
 
 from core.utils.tensors import to_device
@@ -109,7 +109,7 @@ test_dataset.tokenizer_hist = tokenizer
 test_dataset.tokenizer_ans = tokenizer
 
 # load data
-collator_fn = EncoderDecoderTransformerCollator(device='cpu')
+collator_fn = EncoderDecoderTransformerCollatorEmpChat(device='cpu')
 test_loader = DataLoader(test_dataset, batch_size=options.batch_size,
                           drop_last=False, shuffle=True,
                           collate_fn=collator_fn)
