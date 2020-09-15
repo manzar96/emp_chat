@@ -34,7 +34,7 @@ print(options)
 if options.dataset_name == "empchat":
     train_dataset = EmpatheticDataset("train", options.max_hist_len)
     val_dataset = EmpatheticDataset("valid", options.max_hist_len)
-elif "persona":
+elif options.dataset_name =="persona":
     train_dataset = PersonaChatDataset("train", options.max_hist_len)
     val_dataset = PersonaChatDataset("valid", options.max_hist_len)
 else:
