@@ -1,14 +1,11 @@
-import math
 import torch
-from tqdm import tqdm
 from torch.optim import Adam
 from torch.utils.data import DataLoader
-from transformers import BertTokenizer,EncoderDecoderModel,EncoderDecoderConfig
+from transformers import BertTokenizer, EncoderDecoderModel
 
 from core.utils.parser import get_train_parser
 from core.data.empdataset import EmpatheticDataset
 from core.data.collators import EncoderDecoderTransformerCollator
-from core.utils.transforms import ToTensor
 from core.trainers import EncoderDecoderTransformerTrainer
 
 
