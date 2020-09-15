@@ -52,14 +52,10 @@ val_loader = DataLoader(val_dataset, batch_size=options.batch_size,
                           collate_fn=collator_fn)
 
 # create model
-
-#loipon edw mallon prepei na to kanw me to config wste na valw cross_attention
-#na swsw to modelo me: save_pretrained("mymodel") kai meta na to kanw load!!!
 model = EncoderDecoderModel.from_encoder_decoder_pretrained(
     'bert-base-uncased', 'bert-base-uncased')
 if options.modelckpt is not None:
-    state_dict = torch.load(options.modelckpt, map_location='cpu')
-    model.load_state_dict(state_dict)
+    model = EncoderDecoderModel.from_pretrained(options.modelckpt)
 model.to(DEVICE)
 
 # #freeze some layers:

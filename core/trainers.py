@@ -72,11 +72,17 @@ class EncoderDecoderTransformerTrainer:
 
         if not os.path.exists(self.checkpoint_dir):
             os.makedirs(self.checkpoint_dir)
-        torch.save(self.model.state_dict(), os.path.join(
-            self.checkpoint_dir, '{}_{}.pth'.format(epoch, 'model_checkpoint')))
+        # torch.save(self.model.state_dict(), os.path.join(
+        #     self.checkpoint_dir, '{}_{}.pth'.format(epoch, 'model_checkpoint')))
+
+        # we use the proposed method for saving EncoderDecoder model
+        self.model.save_pretrained(os.path.join(self.checkpoint_dir,
+                                                '{}_{}.pth'.format(epoch,
+                                                                   'model_checkpoint')))
         torch.save(self.optimizer.state_dict(), os.path.join(
             self.checkpoint_dir, '{}_{}.pth'.format(epoch,
                                                     'optimizer_checkpoint')))
+
 
     def train_step(self, batch):
         self.model.train()
