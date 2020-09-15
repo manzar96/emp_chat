@@ -53,7 +53,8 @@ gpt2_tokenizer.pad_token = gpt2_tokenizer.unk_token
 # tokenizers will be applied
 train_dataset.tokenizer_hist = bert_tokenizer
 train_dataset.tokenizer_ans = gpt2_tokenizer
-
+val_dataset.tokenizer_hist = bert_tokenizer
+val_dataset.tokenizer_ans = gpt2_tokenizer
 
 # load data
 collator_fn = EncoderDecoderTransformerCollator(device='cpu')
@@ -72,8 +73,7 @@ model = EncoderDecoderModel.from_encoder_decoder_pretrained(
     'bert-base-uncased', 'gpt2')
 
 if options.modelckpt is not None:
-    state_dict = torch.load(options.modelckpt, map_location='cpu')
-    model.load_state_dict(state_dict)
+    model = EncoderDecoderModel.from_pretrained(options.modelckpt)
 model.to(DEVICE)
 
 model.config.decoder_start_token_id = gpt2_tokenizer.bos_token_id

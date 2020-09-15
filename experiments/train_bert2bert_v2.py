@@ -37,6 +37,8 @@ tokenizer.eos_token = tokenizer.sep_token
 # tokenizers will be applied
 train_dataset.tokenizer_hist = tokenizer
 train_dataset.tokenizer_ans = tokenizer
+val_dataset.tokenizer_hist = tokenizer
+val_dataset.tokenizer_ans = tokenizer
 
 # load data
 collator_fn = EncoderDecoderTransformerCollator(device='cpu')
@@ -54,8 +56,7 @@ val_loader = DataLoader(val_dataset, batch_size=options.batch_size,
 model = EncoderDecoderModel.from_encoder_decoder_pretrained(
     'bert-base-uncased', 'bert-base-uncased')
 if options.modelckpt is not None:
-    state_dict = torch.load(options.modelckpt, map_location='cpu')
-    model.load_state_dict(state_dict)
+    model = EncoderDecoderModel.from_pretrained(options.modelckpt)
 model.to(DEVICE)
 
 model.config.decoder_start_token_id = tokenizer.bos_token_id
@@ -64,10 +65,10 @@ model.config.max_length = 142
 model.config.min_length = 56
 
 #freeze some layers:
-for i in range(0,12):
-    for p in model.encoder.encoder.layer[i].parameters():
-        if p.requires_grad:
-            p.requires_grad = False
+# for i in range(0,12):
+#     for p in model.encoder.encoder.layer[i].parameters():
+#         if p.requires_grad:
+#             p.requires_grad = False
 
 # params and optimizer
 numparams = sum([p.numel() for p in model.parameters()])

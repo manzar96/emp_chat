@@ -77,7 +77,7 @@ class EncoderDecoderTransformerTrainer:
 
         # we use the proposed method for saving EncoderDecoder model
         self.model.save_pretrained(os.path.join(self.checkpoint_dir,
-                                                '{}_{}.pth'.format(epoch,
+                                                '{}_{}'.format(epoch,
                                                                    'model_checkpoint')))
         torch.save(self.optimizer.state_dict(), os.path.join(
             self.checkpoint_dir, '{}_{}.pth'.format(epoch,
