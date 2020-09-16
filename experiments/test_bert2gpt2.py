@@ -5,9 +5,7 @@ import numpy as np
 from tqdm import tqdm
 from torch.nn.functional import cosine_similarity
 from torch.utils.data import DataLoader
-from transformers import BertTokenizer,EncoderDecoderModel
-
-from sentence_transformers import SentenceTransformer
+from transformers import BertTokenizer, GPT2Tokenizer, EncoderDecoderModel
 
 from core.utils.parser import get_test_parser
 from core.models.huggingface.parser import add_cmdline_args_gen
@@ -15,8 +13,7 @@ from core.data.collators import EncoderDecoderTransformerCollatorEmpChat
 from core.data.empdataset import EmpatheticDataset
 
 from core.utils.tensors import to_device
-from core.metrics.metrics import calc_sentence_bleu_score, \
-    calc_word_error_rate
+
 
 def calc_test_ppl(model, loader, device):
     with torch.no_grad():
@@ -43,7 +40,7 @@ def calc_test_ppl(model, loader, device):
 
     print("Average Loss: {} | PPL {}".format(avg_loss, math.exp(avg_loss)))
 
-def _generate(options, model, loader, tokenizer, device):
+def _generate(options, model, loader, tokenizer1, tokenizer2, device):
 
     if not os.path.exists(options.outfolder):
         os.makedirs(options.outfolder)
@@ -68,11 +65,12 @@ def _generate(options, model, loader, tokenizer, device):
         # isws prepei stin generate na dwsw kai pad token id!
         #print(tokenizer.decode(outputs[0], skip_special_tokens=True))
 
-        inp_list = ["".join(tokenizer.decode(inputs[i])) for i in range(
+        inp_list = ["".join(tokenizer1.decode(inputs[i])) for i in range(
             inputs.shape[0])]
-        out_list = ["".join(tokenizer.decode(outputs[i])) for i in range(
+        out_list = ["".join(tokenizer2.decode(outputs[i])) for i in range(
             inputs.shape[0])]
-        tgt_list = ["".join(tokenizer.decode(padded_targets[i])) for i in range(
+        tgt_list = ["".join(tokenizer2.decode(padded_targets[i])) for i in
+                    range(
             inputs.shape[0])]
         for i in range(len(inp_list)):
             outfile.write(inp_list[i]+"\t\t"+out_list[i]+"\t\t"+tgt_list[
@@ -97,16 +95,30 @@ else:
 
 
 # make transforms using only bert tokenizer!
-tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+bert_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 # CLS token will work as BOS token
-tokenizer.bos_token = tokenizer.cls_token
+bert_tokenizer.bos_token = bert_tokenizer.cls_token
 # SEP token will work as EOS token
-tokenizer.eos_token = tokenizer.sep_token
+bert_tokenizer.eos_token = bert_tokenizer.sep_token
+
+# make sure GPT2 appends EOS in begin and end
+def build_inputs_with_special_tokens(self, token_ids_0, token_ids_1=None):
+    outputs = [self.bos_token_id] + token_ids_0 + [self.eos_token_id]
+    return outputs
+
+
+GPT2Tokenizer.build_inputs_with_special_tokens = \
+    build_inputs_with_special_tokens
+gpt2_tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+# set pad_token_id to unk_token_id -> be careful here as unk_token_id == eos_token_id == bos_token_id
+gpt2_tokenizer.pad_token = gpt2_tokenizer.unk_token
+# TODO: edw pad_token_id== unk_token_id == eos_token_id == bos_token_id einai
+#  swsto???
 
 # we dont use map on dataset! so transforms will be [] and HuggingFace
 # tokenizers will be applied
-test_dataset.tokenizer_hist = tokenizer
-test_dataset.tokenizer_ans = tokenizer
+test_dataset.tokenizer_hist = bert_tokenizer
+test_dataset.tokenizer_ans = gpt2_tokenizer
 
 # load data
 collator_fn = EncoderDecoderTransformerCollatorEmpChat(device='cpu')
@@ -120,7 +132,7 @@ model.to(DEVICE)
 
 import ipdb;ipdb.set_trace()
 # generate answers model
-_generate(options, model, test_loader, tokenizer, DEVICE)
+_generate(options, model, test_loader, bert_tokenizer, gpt2_tokenizer, DEVICE)
 
 # calc and print metrics
 calc_test_ppl(model, test_loader, DEVICE)
