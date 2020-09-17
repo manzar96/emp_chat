@@ -145,7 +145,6 @@ class EncoderDecoderTransformerTrainer:
         self.train_epochs(epochs, train_loader, val_loader)
 
 
-
 class GPT2TransformerTrainer:
 
     def __init__(self, model,
@@ -337,11 +336,12 @@ class T5TransformerTrainer:
 
         if not os.path.exists(self.checkpoint_dir):
             os.makedirs(self.checkpoint_dir)
-        torch.save(self.model.state_dict(), os.path.join(
-            self.checkpoint_dir, '{}_{}.pth'.format(epoch, 'model_checkpoint')))
+        # torch.save(self.model.state_dict(), os.path.join(
+        #     self.checkpoint_dir, '{}_{}.pth'.format(epoch, 'model_checkpoint')))
+        # we use the proposed method for saving T5 model
+        self.model.save_pretrained(os.path.join(self.checkpoint_dir,'model_checkpoint'))
         torch.save(self.optimizer.state_dict(), os.path.join(
-            self.checkpoint_dir, '{}_{}.pth'.format(epoch,
-                                                    'optimizer_checkpoint')))
+            self.checkpoint_dir,'optimizer_checkpoint'))
 
     def train_step(self, batch):
         self.model.train()
