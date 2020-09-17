@@ -61,16 +61,14 @@ transforms = [tokenize, to_tokens_ids, to_tensor]
 test_dataset = test_dataset.map(tokenize).map(to_tokens_ids).map(to_tensor)
 
 # load test data
-collator_fn = Bert2BertCollator(device='cpu')
+collator_fn = EncoderDecoderTransformerCollatorEmpChat(device='cpu')
 test_loader = DataLoader(test_dataset, batch_size=options.batch_size,
                          drop_last=False, shuffle=True, collate_fn=collator_fn)
 
 
 # load model from checkpoint
-model = EncoderDecoderModel.from_encoder_decoder_pretrained(
-    'bert-base-uncased', 'bert-base-uncased')
-# model = from_checkpoint(options.modelckpt, model, map_location='cpu')
-# model = model.to(DEVICE)
-model.to(DEVICE)
+model = EncoderDecoderModel.from_pretrained(options.modelckpt)
+model = model.to(DEVICE)
+
 # test model
 _generate(options,model,test_loader,DEVICE)
