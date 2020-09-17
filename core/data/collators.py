@@ -85,7 +85,7 @@ class EncoderDecoderTransformerCollatorPersChat(object):
 
 
 
-class GPT2Collator(object):
+class GPT2CollatorEmpChat(object):
     def __init__(self, pad_indx=0, device='cpu'):
         self.pad_indx = pad_indx
         self.device = device
@@ -112,6 +112,33 @@ class GPT2Collator(object):
 
         return padded_inputs,inputs_pad_mask
 
+
+class GPT2CollatorPersChat(object):
+    def __init__(self, pad_indx=0, device='cpu'):
+        self.pad_indx = pad_indx
+        self.device = device
+
+    def __call__(self, batch):
+        inputs, targets = map(list, zip(*batch))
+
+        cat_input = [torch.cat((inputs[i],targets[i])) for i in range(len(
+            inputs))]
+
+        cat_lengths = torch.tensor(
+            [len(s) for s in cat_input], device=self.device)
+
+        # attention mask
+        max_length = max(cat_lengths)
+        inputs_pad_mask = pad_mask(cat_lengths, max_length=max_length,
+                                   device=self.device)
+        # Pad inputs and targets
+        padded_inputs = (
+            pad_sequence(cat_input, batch_first=True,
+                         padding_value=self.pad_indx)
+                .to(self.device))
+
+
+        return padded_inputs,inputs_pad_mask
 
 class T5CollatorEmpChat(object):
     def __init__(self, pad_indx=0, device='cpu'):
