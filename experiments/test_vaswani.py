@@ -13,30 +13,26 @@ from core.models.transformers.parser import add_cmdline_args,\
     add_cmdline_args_gen
 from core.data.empdataset import EmpatheticDataset
 from core.utils.tokens import DIALOG_SPECIAL_TOKENS
-from core.data.collators import TransformerVaswaniCollator
+from core.data.collators import TransformerVaswaniCollatorEmpChat
 from core.models.transformers.modules_parlai import \
     TransformerEncodeDecoderVaswani
+from core.modules.loss import SequenceCrossEntropyLoss
 from core.utils.tensors import to_device
 from core.metrics.metrics import calc_sentence_bleu_score, \
     calc_word_error_rate
 
 
-def calc_test_ppl(model, loader, device):
+def calc_test_ppl(model, loader,criterion, device):
     with torch.no_grad():
         avg_loss = 0
         for index, batch in enumerate(tqdm(loader)):
             inputs = to_device(batch[0], device=device)
             inputs_att = to_device(batch[1], device=device)
             pad_targets = to_device(batch[2], device=device)
-            targets = to_device(batch[3], device=device)
+            repl_targets = to_device(batch[3], device=device)
             targets_att = to_device(batch[4], device=device)
-
-            outputs = model(input_ids=inputs, attention_mask=inputs_att,
-                            lm_labels=targets)
-
-            lm_loss = outputs[0]
-            pred_scores = outputs[1]
-            last_hidden = outputs[2]
+            scores, preds, encoder_states = model(inputs, ys=pad_targets)
+            lm_loss = criterion(scores, pad_targets)
             avg_loss += lm_loss.item()
 
         avg_loss = avg_loss / len(loader)
@@ -120,7 +116,7 @@ to_tensor = ToTensor()
 test_dataset = test_dataset.map(tokenizer).map(to_tokens_ids).map(to_tensor)
 
 # load test data
-collator_fn = TransformerVaswaniCollator(device='cpu')
+collator_fn = TransformerVaswaniCollatorEmpChat(device='cpu')
 test_loader = DataLoader(test_dataset, batch_size=options.batch_size,
                          drop_last=False, shuffle=True, collate_fn=collator_fn)
 
@@ -143,10 +139,11 @@ model.to(DEVICE)
 
 import ipdb;ipdb.set_trace()
 # generate answers model
-_generate(options, model, test_loader, idx2word, DEVICE)
+#_generate(options, model, test_loader, idx2word, DEVICE)
 
 # calc and print metrics
-#calc_test_ppl(model, test_loader, DEVICE)
+criterion = SequenceCrossEntropyLoss(word2idx[DIALOG_SPECIAL_TOKENS.PAD.value])
+calc_test_ppl(model, test_loader, criterion, DEVICE)
 #calc_metrics(options, tokenizer)
 
 #calc_similarity_trans(options)
