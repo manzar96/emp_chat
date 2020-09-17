@@ -78,11 +78,11 @@ val_loader = DataLoader(val_dataset, batch_size=options.batch_size,
 
 #loipon edw mallon prepei na to kanw me to config wste na valw cross_attention
 #na swsw to modelo me: save_pretrained("mymodel") kai meta na to kanw load!!!
-model = EncoderDecoderModel.from_encoder_decoder_pretrained(
-    'bert-base-uncased', 'gpt2')
-
 if options.modelckpt is not None:
     model = EncoderDecoderModel.from_pretrained(options.modelckpt)
+else:
+    model = EncoderDecoderModel.from_encoder_decoder_pretrained(
+        'bert-base-uncased', 'gpt2')
 model.to(DEVICE)
 
 model.config.decoder_start_token_id = gpt2_tokenizer.bos_token_id

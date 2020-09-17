@@ -1,12 +1,12 @@
 import torch
 from tqdm import tqdm
 from torch.utils.data import DataLoader
-from transformers import BertTokenizer,EncoderDecoderModel,GPT2Model
+from transformers import BertTokenizer, EncoderDecoderModel
 
 from core.utils.parser import get_test_parser
 from core.models.huggingface.parser import add_cmdline_args_gen
 from core.data.empdataset import EmpatheticDataset
-from core.data.collators import Bert2BertCollator
+from core.data.collators import EncoderDecoderTransformerCollatorEmpChat
 from core.utils.transforms import ToTensor
 from core.utils.tensors import from_checkpoint, to_device
 

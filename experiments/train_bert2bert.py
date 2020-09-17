@@ -60,10 +60,11 @@ val_loader = DataLoader(val_dataset, batch_size=options.batch_size,
                           collate_fn=collator_fn)
 
 # create model
-model = EncoderDecoderModel.from_encoder_decoder_pretrained(
-    'bert-base-uncased', 'bert-base-uncased')
 if options.modelckpt is not None:
     model = EncoderDecoderModel.from_pretrained(options.modelckpt)
+else:
+    model = EncoderDecoderModel.from_encoder_decoder_pretrained(
+        'bert-base-uncased', 'bert-base-uncased')
 model.to(DEVICE)
 
 # #freeze some layers:
