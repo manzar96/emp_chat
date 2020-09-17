@@ -36,7 +36,7 @@ tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
 # to_tokens_ids = lambda x: tokenizer.convert_tokens_to_ids(x)
 # to_tensor = ToTensor()
 # transforms = [tokenize, to_tokens_ids, to_tensor]
-# # TODO: set bos_index, eos_index sto bert tokenizer apo special tokens
+# # TODO: check special tokens!!!!
 #
 # # transform dataset
 # train_dataset = train_dataset.map(tokenize).map(to_tokens_ids).map(to_tensor)
