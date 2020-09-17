@@ -7,7 +7,8 @@ from transformers import T5Tokenizer, T5ForConditionalGeneration
 
 from core.utils.parser import get_train_parser
 from core.data.empdataset import EmpatheticDataset
-from core.data.collators import T5Collator
+from core.data.persona import PersonaChatDataset
+from core.data.collators import T5CollatorEmpChat, T5CollatorPersChat
 from core.utils.transforms import ToTensor
 from core.trainers import T5TransformerTrainer
 
@@ -23,25 +24,38 @@ options = parser.parse_args()
 if options.dataset_name == "empchat":
     train_dataset = EmpatheticDataset("train", options.max_hist_len)
     val_dataset = EmpatheticDataset("valid", options.max_hist_len)
+elif options.dataset_name == "persona":
+    train_dataset = PersonaChatDataset("train", options.max_hist_len)
+    val_dataset = PersonaChatDataset("valid", options.max_hist_len)
 else:
     raise NotImplementedError
 
 # make transforms
 tokenizer = T5Tokenizer.from_pretrained('t5-small')
-appender = lambda x: x+" </s>" # this one is used because we must add </s> at
-# the end of each input/target
-tokenize = lambda x: tokenizer.tokenize(x)
-to_tokens_ids = lambda x: tokenizer.convert_tokens_to_ids(x)
-to_tensor = ToTensor()
+# appender = lambda x: x+" </s>" # this one is used because we must add </s> at
+# # the end of each input/target
+# tokenize = lambda x: tokenizer.tokenize(x)
+# to_tokens_ids = lambda x: tokenizer.convert_tokens_to_ids(x)
+# to_tensor = ToTensor()
+#
+# # transform dataset
+# train_dataset = train_dataset.map(appender).map(tokenize).map(to_tokens_ids).\
+#     map(to_tensor)
+# val_dataset = val_dataset.map(appender).map(tokenize).map(to_tokens_ids).map(
+#     to_tensor)
 
-# transform dataset
-train_dataset = train_dataset.map(appender).map(tokenize).map(to_tokens_ids).\
-    map(to_tensor)
-val_dataset = val_dataset.map(appender).map(tokenize).map(to_tokens_ids).map(
-    to_tensor)
+"""Uncomment the above to use map with transforms"""
+# we dont use map on dataset! so transforms will be [] and HuggingFace
+# tokenizers will be applied
+train_dataset.tokenizer_hist = tokenizer
+train_dataset.tokenizer_ans = tokenizer
+
 
 # load data
-collator_fn = T5Collator(device='cpu')
+if options.dataset_name == "empchat":
+    collator_fn = T5CollatorEmpChat(device='cpu')
+elif "persona":
+    collator_fn = T5CollatorPersChat(device='cpu')
 train_loader = DataLoader(train_dataset, batch_size=options.batch_size,
                           drop_last=False, shuffle=True,
                           collate_fn=collator_fn)
@@ -51,11 +65,9 @@ val_loader = DataLoader(val_dataset, batch_size=options.batch_size,
 
 # create model
 model = T5ForConditionalGeneration.from_pretrained('t5-small')
-model.config.output_hidden_states = True
-
 if options.modelckpt is not None:
-    state_dict = torch.load(options.modelckpt, map_location='cpu')
-    model.load_state_dict(state_dict)
+    model = T5ForConditionalGeneration.from_pretrained(options.modelckpt)
+model.config.output_hidden_states = True
 model.to(DEVICE)
 
 # params and optimizer
