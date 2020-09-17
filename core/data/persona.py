@@ -11,6 +11,7 @@ import socket
 from transformers import cached_path
 import torch
 import numpy as np
+from core.utils.tensors import mktensor
 from torch.utils.data import Dataset
 
 
@@ -49,7 +50,8 @@ def get_dataset(tokenizer, dataset_path, dataset_cache):
 
 class PersonaChatDataset(Dataset):
 
-    def __init__(self, splitname, maxhistorylen):
+    def __init__(self, splitname, maxhistorylen, tokenizer_hist=None,
+                 tokenizer_ans=None):
         self.dataset_dict = pickle.load(open(
             './data/Pesonachat_s3_amazonaws/personachat.pkl', 'rb'))
 
@@ -57,6 +59,10 @@ class PersonaChatDataset(Dataset):
         self.maxhistorylen = maxhistorylen
         self.persona, self.data = self.get_data()
         self.transforms = []
+        # we use different tokenizers for context and answers in case its
+        # needed!
+        self.tokenizer_hist = tokenizer_hist
+        self.tokenizer_ans = tokenizer_ans
 
     def get_data(self):
         self.data_list = self.dataset_dict[self.splitname]
@@ -118,9 +124,16 @@ class PersonaChatDataset(Dataset):
     def __getitem__(self, index):
         personality = self.persona[index]
         hist, ans = self.data[index]
-        for t in self.transforms:
-            hist = t(hist)
-            ans = t(ans)
+
+        if self.transforms == []:
+            hist = self.tokenizer_hist(hist)
+            ans = self.tokenizer_ans(ans)
+            hist = mktensor(hist['input_ids'], dtype=torch.long)
+            ans = mktensor(ans['input_ids'], dtype=torch.long)
+        else:
+            for t in self.transforms:
+                hist = t(hist)
+                ans = t(ans)
         # we dont use personality! if we want to return add below!
         return hist, ans
 
