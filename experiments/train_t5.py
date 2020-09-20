@@ -49,7 +49,8 @@ tokenizer = T5Tokenizer.from_pretrained('t5-small')
 # tokenizers will be applied
 train_dataset.tokenizer_hist = tokenizer
 train_dataset.tokenizer_ans = tokenizer
-
+val_dataset.tokenizer_hist = tokenizer
+val_dataset.tokenizer_ans = tokenizer
 
 # load data
 if options.dataset_name == "empchat":
