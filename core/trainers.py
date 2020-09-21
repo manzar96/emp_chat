@@ -7,7 +7,7 @@ from tqdm import tqdm
 from typing import cast, List, Optional, Tuple, TypeVar
 from core.utils.tensors import to_device
 import random
-
+from core.modules.loss import SequenceCrossEntropyLoss
 TrainerType = TypeVar('TrainerType', bound='Trainer')
 
 
@@ -417,7 +417,7 @@ class BartTransformerTrainer:
         self.clip = clip
         self.device = device
         self.patience = patience
-
+        self.crit = SequenceCrossEntropyLoss(pad_idx=-100)
     def calc_val_loss(self, val_loader):
 
         self.model.eval()
@@ -433,11 +433,12 @@ class BartTransformerTrainer:
 
                 outputs = self.model(input_ids=inputs,
                                      attention_mask=inputs_att,
-                                     decoder_input_ids=pad_targets,
-                                     labels=repl_targets)
-                lm_loss = outputs[0]
-                pred_scores = outputs[1]
-                last_hidden = outputs[2]
+                                     decoder_input_ids=pad_targets)
+
+
+                pred_scores = outputs[0]
+                last_hidden = outputs[1]
+                lm_loss = self.crit(pred_scores, repl_targets)
                 avg_val_loss += lm_loss.item()
 
             avg_val_loss = avg_val_loss / len(val_loader)
@@ -477,12 +478,11 @@ class BartTransformerTrainer:
         targets_att = to_device(batch[4], device=self.device)
 
         outputs = self.model(input_ids=inputs, attention_mask=inputs_att,
-                             decoder_input_ids=pad_targets,
-                             labels=repl_targets)
+                             decoder_input_ids=pad_targets)
 
-        lm_loss = outputs[0]
-        pred_scores = outputs[1]
-        last_hidden = outputs[2]
+        pred_scores = outputs[0]
+        last_hidden = outputs[1]
+        lm_loss = self.crit(pred_scores, repl_targets)
         return lm_loss, last_hidden
 
     def train_epochs(self, n_epochs, train_loader, val_loader):

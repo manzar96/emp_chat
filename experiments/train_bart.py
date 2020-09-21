@@ -70,6 +70,7 @@ if options.modelckpt is not None:
 else:
     model = BartForConditionalGeneration.from_pretrained('facebook/bart-base')
 model.config.output_hidden_states = True
+model.config.use_cache = False
 model.to(DEVICE)
 model.cuda()
 # params and optimizer
