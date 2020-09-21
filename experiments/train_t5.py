@@ -31,7 +31,7 @@ else:
     raise NotImplementedError
 
 # make transforms
-tokenizer = T5Tokenizer.from_pretrained('t5-small')
+tokenizer = T5Tokenizer.from_pretrained('t5-base')
 # appender = lambda x: x+" </s>" # this one is used because we must add </s> at
 # # the end of each input/target
 # tokenize = lambda x: tokenizer.tokenize(x)
@@ -68,7 +68,7 @@ val_loader = DataLoader(val_dataset, batch_size=options.batch_size,
 if options.modelckpt is not None:
     model = T5ForConditionalGeneration.from_pretrained(options.modelckpt)
 else:
-    model = T5ForConditionalGeneration.from_pretrained('t5-small')
+    model = T5ForConditionalGeneration.from_pretrained('t5-base')
 model.config.output_hidden_states = True
 model.to(DEVICE)
 
