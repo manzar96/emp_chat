@@ -6,7 +6,6 @@ from tqdm import tqdm
 from torch.nn.functional import cosine_similarity
 from torch.utils.data import DataLoader
 from transformers import T5Tokenizer, T5ForConditionalGeneration
-from sentence_transformers import SentenceTransformer
 
 
 from core.utils.parser import get_test_parser
