@@ -55,7 +55,7 @@ def calc_test_ppl(model, loader, device):
             targets_att = to_device(batch[4], device=device)
 
             outputs = model(input_ids=inputs, attention_mask=inputs_att,
-                            lm_labels=targets)
+                            labels=targets)
 
             lm_loss = outputs[0]
             pred_scores = outputs[1]
