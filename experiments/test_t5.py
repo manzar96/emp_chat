@@ -70,6 +70,9 @@ def calc_test_ppl(model, loader, device):
 def calc_metrics(options,tokenizer):
     outfile = open(os.path.join(options.outfolder, "gen_outs.txt"), "r")
     lines = outfile.readlines()
+    bleu1=[]
+    bleu2=[]
+    bleu3=[]
     bleu4 = []
     word_error_rate = []
     for line in lines:
@@ -77,9 +80,17 @@ def calc_metrics(options,tokenizer):
         inp = tokenizer.encode(inp)
         out = tokenizer.encode(out)
         trgt = tokenizer.encode(trgt)
+        bleu1.append(calc_sentence_bleu_score(trgt, out, n=1))
+        bleu2.append(calc_sentence_bleu_score(trgt, out, n=2))
+        bleu3.append(calc_sentence_bleu_score(trgt, out, n=3))
         bleu4.append(calc_sentence_bleu_score(trgt, out, n=4))
         word_error_rate.append(calc_word_error_rate(trgt, out))
-    print("BLEU: {}".format(np.mean(bleu4)))
+    print("BLEU1: {}".format(np.mean(bleu1)))
+    print("BLEU2: {}".format(np.mean(bleu2)))
+    print("BLEU3: {}".format(np.mean(bleu3)))
+    print("BLEU4: {}".format(np.mean(bleu4)))
+    print("Average BLEU score: {}".format( (np.mean(bleu1)+np.mean(
+        bleu2)+np.mean(bleu3)+np.mean(bleu4))/4.0 ) )
     print("Word Error Rate: {}".format(np.mean(word_error_rate)))
 
 
