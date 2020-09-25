@@ -95,7 +95,8 @@ def _generate(options, model, loader, tokenizer, device):
 
         outputs = model.generate(input_ids=inputs,
                        attention_mask=inputs_att,
-                       max_length=50,
+                       max_length=40,
+                       length_penaly=0.6,
                        do_sample=options.sampling,
                        num_beams=options.beam_size,
                        temperature=options.temp,
@@ -163,6 +164,6 @@ import ipdb;ipdb.set_trace()
 
 # calc and print metrics
 calc_test_ppl(model, test_loader, DEVICE)
-#calc_metrics(options, tokenizer)
+calc_metrics(options, tokenizer)
 
 #calc_similarity_trans(options)
