@@ -91,7 +91,7 @@ def calc_metrics(options,tokenizer):
     print("BLEU4: {}".format(np.mean(bleu4)))
     print("Average BLEU score: {}".format( (np.mean(bleu1)+np.mean(
         bleu2)+np.mean(bleu3)+np.mean(bleu4))/4.0 ) )
-    print("Word Error Rate: {}".format(np.mean(word_error_rate)))
+    #print("Word Error Rate: {}".format(np.mean(word_error_rate)))
 
 
 def _generate(options, model, loader, tokenizer, device):
