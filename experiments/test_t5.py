@@ -169,6 +169,8 @@ test_loader = DataLoader(test_dataset, batch_size=options.batch_size,
 # load model from checkpoint
 model = T5ForConditionalGeneration.from_pretrained(options.modelckpt)
 model.to(DEVICE)
+#we set dropout to zero for testing!
+model.config.dropout_rate = 0
 
 import ipdb;ipdb.set_trace()
 # generate answers model
