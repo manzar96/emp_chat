@@ -84,20 +84,33 @@ class EncoderDecoderTransformerCollatorPersChat(object):
                targets_pad_mask
 
 
-
 class GPT2CollatorEmpChat(object):
-    def __init__(self, pad_indx=0, device='cpu'):
+
+    def __init__(self, endofinput_indx, pad_indx=0, device='cpu'):
         self.pad_indx = pad_indx
         self.device = device
+        # we concatenate target with input! so why it needs to be done is to
+        # add a token between input and target to separate them.
+        self.eoi = endofinput_indx
+
+    def replace_pad_labels(self,mytensor,value):
+        tmp = mytensor.clone()
+        tmp[mytensor==0] = value
+        return tmp
 
     def __call__(self, batch):
         inputs, targets, labels = map(list, zip(*batch))
 
-        cat_input = [torch.cat((inputs[i],targets[i])) for i in range(len(
+        eoi_list = [torch.tensor([self.eoi], device=self.device) for i in
+                    range(len(inputs))]
+        cat_input = [torch.cat((inputs[i],eoi_list[i])) for i in range(len(
+            inputs))]
+
+        cat_all = [torch.cat((cat_input[i],targets[i])) for i in range(len(
             inputs))]
 
         cat_lengths = torch.tensor(
-            [len(s) for s in cat_input], device=self.device)
+            [len(s) for s in cat_all], device=self.device)
 
         # attention mask
         max_length = max(cat_lengths)
@@ -105,27 +118,39 @@ class GPT2CollatorEmpChat(object):
                                    device=self.device)
         # Pad inputs and targets
         padded_inputs = (
-            pad_sequence(cat_input, batch_first=True,
+            pad_sequence(cat_all, batch_first=True,
                          padding_value=self.pad_indx)
                 .to(self.device))
-
-
-        return padded_inputs,inputs_pad_mask
+        replaced_inp = self.replace_pad_labels(padded_inputs, -100)
+        return padded_inputs,inputs_pad_mask,replaced_inp
 
 
 class GPT2CollatorPersChat(object):
-    def __init__(self, pad_indx=0, device='cpu'):
+    def __init__(self, endofinput_indx, pad_indx=0, device='cpu'):
         self.pad_indx = pad_indx
         self.device = device
+        # we concatenate target with input! so why it needs to be done is to
+        # add a token between input and target to separate them.
+        self.eoi = endofinput_indx
+
+    def replace_pad_labels(self,mytensor,value):
+        tmp = mytensor.clone()
+        tmp[mytensor==0] = value
+        return tmp
 
     def __call__(self, batch):
         inputs, targets = map(list, zip(*batch))
 
-        cat_input = [torch.cat((inputs[i],targets[i])) for i in range(len(
+        eoi_list = [torch.tensor([self.eoi], device=self.device) for i in
+                    range(len(inputs))]
+        cat_input = [torch.cat((inputs[i],eoi_list[i])) for i in range(len(
+            inputs))]
+
+        cat_all = [torch.cat((cat_input[i],targets[i])) for i in range(len(
             inputs))]
 
         cat_lengths = torch.tensor(
-            [len(s) for s in cat_input], device=self.device)
+            [len(s) for s in cat_all], device=self.device)
 
         # attention mask
         max_length = max(cat_lengths)
@@ -133,12 +158,11 @@ class GPT2CollatorPersChat(object):
                                    device=self.device)
         # Pad inputs and targets
         padded_inputs = (
-            pad_sequence(cat_input, batch_first=True,
+            pad_sequence(cat_all, batch_first=True,
                          padding_value=self.pad_indx)
                 .to(self.device))
-
-
-        return padded_inputs,inputs_pad_mask
+        replaced_inp = self.replace_pad_labels(padded_inputs, -100)
+        return padded_inputs,inputs_pad_mask,replaced_inp
 
 class T5CollatorEmpChat(object):
     def __init__(self, pad_indx=0, device='cpu'):

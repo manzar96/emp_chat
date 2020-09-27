@@ -163,24 +163,6 @@ class GPT2TransformerTrainer:
         self.device = device
         self.patience = patience
 
-    # def parse_batch(
-    #         self,
-    #         batch: List[torch.Tensor]) -> Tuple[torch.Tensor, ...]:
-    #     inputs = to_device(batch[0], device=self.device)
-    #     inputs_lens = to_device(batch[1], device=self.device)
-    #     inputs_att = to_device(batch[2], device=self.device)
-    #     targets = to_device(batch[3], device=self.device)
-    #     targets_lens = to_device(batch[4], device=self.device)
-    #     targets_att = to_device(batch[5], device=self.device)
-    #     return inputs, inputs_att, targets, targets_att
-
-    # def get_predictions_and_targets(
-    #         self: TrainerType,
-    #         batch: List[torch.Tensor]) -> Tuple[torch.Tensor, ...]:
-    #     inputs, inputs_mask, targets, targets_mask = self.parse_batch(batch)
-    #     y_pred = self.model(inputs, inputs_mask, targets, targets_mask)
-    #     return y_pred, inputs2
-
     def calc_val_loss(self, val_loader):
 
         self.model.eval()
@@ -190,10 +172,12 @@ class GPT2TransformerTrainer:
             for index, batch in enumerate(tqdm(val_loader)):
                 inputs = to_device(batch[0], device=self.device)
                 inputs_att = to_device(batch[1], device=self.device)
+                replaced_targets = to_device(batch[2], device=self.device)
 
                 outputs = self.model(input_ids=inputs,
                                      attention_mask=inputs_att,
-                                     labels=inputs)
+                                     labels=replaced_targets)
+
                 lm_loss = outputs[0]
                 pred_scores = outputs[1]
                 last_hidden = outputs[2]
@@ -219,22 +203,22 @@ class GPT2TransformerTrainer:
         if not os.path.exists(self.checkpoint_dir):
             os.makedirs(self.checkpoint_dir)
         torch.save(self.model.state_dict(), os.path.join(
-            self.checkpoint_dir, '{}_{}.pth'.format(epoch, 'model_checkpoint')))
+            self.checkpoint_dir,'model_checkpoint'))
         torch.save(self.optimizer.state_dict(), os.path.join(
-            self.checkpoint_dir, '{}_{}.pth'.format(epoch,
-                                                    'optimizer_checkpoint')))
+            self.checkpoint_dir, 'optimizer_checkpoint'))
 
     def train_step(self, batch):
         self.model.train()
         self.optimizer.zero_grad()
-
         inputs = to_device(batch[0], device=self.device)
         inputs_att = to_device(batch[1], device=self.device)
+        replaced_targets = to_device(batch[2], device=self.device)
 
         outputs = self.model(input_ids=inputs,
                              attention_mask=inputs_att,
-                             labels=inputs)
+                             labels=replaced_targets)
         lm_loss = outputs[0]
+        print(lm_loss)
         pred_scores = outputs[1]
         last_hidden = outputs[2]
         return lm_loss, last_hidden
@@ -701,10 +685,9 @@ class TransformerVaswaniTrainerMultitask:
         if not os.path.exists(self.checkpoint_dir):
             os.makedirs(self.checkpoint_dir)
         torch.save(self.model.state_dict(), os.path.join(
-            self.checkpoint_dir, '{}_{}.pth'.format(epoch, 'model_checkpoint')))
+            self.checkpoint_dir, 'model_checkpoint'))
         torch.save(self.optimizer.state_dict(), os.path.join(
-            self.checkpoint_dir, '{}_{}.pth'.format(epoch,
-                                                    'optimizer_checkpoint')))
+            self.checkpoint_dir, 'optimizer_checkpoint'))
 
     def train_step(self, batch):
         self.model.train()

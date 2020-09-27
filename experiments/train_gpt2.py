@@ -31,14 +31,16 @@ else:
     raise NotImplementedError
 
 # make transforms
-tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
+tokenizer = GPT2Tokenizer.from_pretrained('gpt2', additional_special_tokens=[
+    '<s>','<|eoi|>']) # remember to resize token_embeddings on model!
+tokenizer.pad_token = tokenizer.eos_token
+eoi_index = tokenizer.additional_special_tokens_ids[1]
 # tokenize = lambda x: tokenizer.tokenize(x)
 # to_tokens_ids = lambda x: tokenizer.convert_tokens_to_ids(x)
 # to_tensor = ToTensor()
 # transforms = [tokenize, to_tokens_ids, to_tensor]
-# # TODO: check special tokens!!!!
-#
-# # transform dataset
+
+# transform dataset
 # train_dataset = train_dataset.map(tokenize).map(to_tokens_ids).map(to_tensor)
 # val_dataset = val_dataset.map(tokenize).map(to_tokens_ids).map(to_tensor)
 
@@ -51,9 +53,9 @@ val_dataset.tokenizer_ans = tokenizer
 
 # load data
 if options.dataset_name == "empchat":
-    collator_fn = GPT2CollatorEmpChat(device='cpu')
+    collator_fn = GPT2CollatorEmpChat(endofinput_indx=eoi_index,device='cpu')
 elif "persona":
-    collator_fn = GPT2CollatorPersChat(device='cpu')
+    collator_fn = GPT2CollatorPersChat(endofinput_indx=eoi_index,device='cpu')
 train_loader = DataLoader(train_dataset, batch_size=options.batch_size,
                           drop_last=False, shuffle=True,
                           collate_fn=collator_fn)
@@ -67,6 +69,8 @@ if options.modelckpt is not None:
 else:
     model = GPT2LMHeadModel.from_pretrained('gpt2')
 model.config.output_hidden_states = True
+model.config.dropout_rate=0.2
+model.resize_token_embeddings(len(tokenizer))
 model.to(DEVICE)
 
 # params and optimizer

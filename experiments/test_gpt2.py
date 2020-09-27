@@ -73,7 +73,10 @@ else:
     raise NotImplementedError
 
 # make transforms
-tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
+tokenizer = GPT2Tokenizer.from_pretrained('gpt2', additional_special_tokens=[
+    '<s>','<|eoi|>']) # remember to resize token_embeddings on model!
+tokenizer.pad_token = tokenizer.eos_token
+eoi_index = tokenizer.additional_special_tokens_ids[1]
 # tokenize = lambda x: tokenizer.tokenize(x)
 # to_tokens_ids = lambda x: tokenizer.convert_tokens_to_ids(x)
 # to_tensor = ToTensor()
@@ -86,7 +89,7 @@ test_dataset.tokenizer_hist = tokenizer
 test_dataset.tokenizer_ans = tokenizer
 
 # load test data
-collator_fn = GPT2CollatorEmpChat(device='cpu')
+collator_fn = GPT2CollatorEmpChat(endofinput_indx=eoi_index,device='cpu')
 test_loader = DataLoader(test_dataset, batch_size=options.batch_size,
                          drop_last=False, shuffle=True, collate_fn=collator_fn)
 
@@ -95,6 +98,7 @@ test_loader = DataLoader(test_dataset, batch_size=options.batch_size,
 model = GPT2LMHeadModel.from_pretrained('gpt2')
 state_dict = torch.load(options.ckpt, map_location='cpu')
 model.load_state_dict(state_dict)
+model.config.dropout_rate = 0
 model.to(DEVICE)
 
 import ipdb;ipdb.set_trace()
