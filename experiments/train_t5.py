@@ -2,6 +2,7 @@ import math
 import torch
 from tqdm import tqdm
 from torch.optim import Adam
+from core.modules.optims import Adafactor
 from torch.utils.data import DataLoader
 from transformers import T5Tokenizer, T5ForConditionalGeneration
 
@@ -79,9 +80,11 @@ train_numparams = sum([p.numel() for p in model.parameters() if
                        p.requires_grad])
 print('Total Parameters: {}'.format(numparams))
 print('Trainable Parameters: {}'.format(train_numparams))
-optimizer = Adam(
-    [p for p in model.parameters() if p.requires_grad],
-    lr=options.lr, weight_decay=1e-6)
+# optimizer = Adam(
+#     [p for p in model.parameters() if p.requires_grad],
+#     lr=options.lr, weight_decay=1e-6)
+optimizer = Adafactor(
+    [p for p in model.parameters() if p.requires_grad], weight_decay=1e-6)
 # run with lr 0.001
 if options.optimckpt is not None:
     state_dict = torch.load(options.optim, map_location='cpu')
