@@ -67,7 +67,7 @@ model.to(DEVICE)
 
 model.config.decoder_start_token_id = tokenizer.bos_token_id
 model.config.eos_token_id = tokenizer.eos_token_id
-# model.config.max_length = 142
+model.config.max_length = 512
 # model.config.min_length = 56
 
 #freeze some layers:

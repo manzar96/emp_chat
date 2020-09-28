@@ -90,7 +90,8 @@ class EncoderDecoderTransformerTrainer:
         padded_targets = to_device(batch[2], device=self.device)
         replaced_targets = to_device(batch[3], device=self.device)
         targets_att = to_device(batch[4], device=self.device)
-
+        print(inputs.shape)
+        print(padded_targets.shape)
         # episis den eimai sigouros gia to ti prepei na dwsw san
         # decoder_input_ids (ta input ids i ta padded_targets??)
 
@@ -340,6 +341,7 @@ class T5TransformerTrainer:
                              attention_mask=inputs_att,
                              labels=repl_targets)
         lm_loss = outputs[0]
+        # print(lm_loss)
         pred_scores = outputs[1]
         last_hidden = outputs[2]
         return lm_loss, last_hidden
