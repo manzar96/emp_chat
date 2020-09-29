@@ -420,10 +420,10 @@ class T5TransformerTrainerMultitask:
 
         if not os.path.exists(self.checkpoint_dir):
             os.makedirs(self.checkpoint_dir)
-        # torch.save(self.model.state_dict(), os.path.join(
-        #     self.checkpoint_dir, '{}_{}.pth'.format(epoch, 'model_checkpoint')))
+        torch.save(self.model.state_dict(), os.path.join(
+            self.checkpoint_dir, 'model_checkpoint'))
         # we use the proposed method for saving T5 model
-        self.model.save_pretrained(os.path.join(self.checkpoint_dir,'model_checkpoint'))
+        # self.model.save_pretrained(os.path.join(self.checkpoint_dir,'model_checkpoint'))
         torch.save(self.optimizer.state_dict(), os.path.join(
             self.checkpoint_dir,'optimizer_checkpoint'))
 
