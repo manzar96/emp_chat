@@ -461,7 +461,7 @@ class T5TransformerTrainerMultitask:
             avg_val_lm_loss = avg_val_lm_loss / len(val_loader)
             print("avg val loss {} ,   avg val lm_loss {}".format(
                 avg_val_loss, avg_val_lm_loss))
-            return avg_val_loss
+            return avg_val_lm_loss
 
 
     def train_step(self, batch):
@@ -492,6 +492,7 @@ class T5TransformerTrainerMultitask:
         self.model.train()
 
         for epoch in range(n_epochs):
+            iters=0
             if cur_patience == self.patience:
                 break
 
@@ -503,15 +504,21 @@ class T5TransformerTrainerMultitask:
             for index, sample_batch in enumerate(tqdm(train_loader)):
 
                 lm_loss, clf_loss = self.train_step(sample_batch)
-                print("lm_loss {},   clf_loss  {}".format(lm_loss,clf_loss))
+
                 loss = lm_loss + clf_loss
                 avg_train_loss += loss.item()
                 avg_train_lm_loss += lm_loss.item()
                 loss.backward(retain_graph=False)
+                iters += 1
                 if self.clip is not None:
                     torch.nn.utils.clip_grad_norm_(self.model.parameters(),
                                                    self.clip)
                 self.optimizer.step()
+                if iters%400==0:
+                    print("lm_loss {},   clf_loss  {}".format(lm_loss.item(),
+                                                              clf_loss.item()))
+                    print("total loss {}".format(loss.item()))
+                    print("Train lm loss {}".format(avg_train_lm_loss/iters))
             avg_train_loss = avg_train_loss / len(train_loader)
             avg_train_lm_loss = avg_train_lm_loss / len(train_loader)
             print("avg train loss {} ,   avg train lm_loss {}".format(avg_train_loss,avg_train_lm_loss))
