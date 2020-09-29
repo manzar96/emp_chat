@@ -90,8 +90,7 @@ class EncoderDecoderTransformerTrainer:
         padded_targets = to_device(batch[2], device=self.device)
         replaced_targets = to_device(batch[3], device=self.device)
         targets_att = to_device(batch[4], device=self.device)
-        print(inputs.shape)
-        print(padded_targets.shape)
+
         # episis den eimai sigouros gia to ti prepei na dwsw san
         # decoder_input_ids (ta input ids i ta padded_targets??)
 
