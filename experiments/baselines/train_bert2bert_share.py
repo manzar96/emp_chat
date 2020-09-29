@@ -1,7 +1,8 @@
 import torch
 from torch.optim import Adam
 from torch.utils.data import DataLoader
-from transformers import BertTokenizer, EncoderDecoderModel
+from transformers import BertTokenizer, BertConfig, EncoderDecoderModel, \
+    EncoderDecoderConfig
 
 from core.utils.parser import get_train_parser
 from core.data.empdataset import EmpatheticDataset
@@ -55,20 +56,25 @@ val_loader = DataLoader(val_dataset, batch_size=options.batch_size,
                           collate_fn=collator_fn)
 
 # create model
+# Initializing a BERT bert-base-uncased style configuration
+config_encoder = BertConfig()
+config_decoder = BertConfig()
+
+config = EncoderDecoderConfig.from_encoder_decoder_configs(config_encoder, config_decoder)
+config.tie_encoder_decoder=True
+# Initializing a Bert2Bert model from the bert-base-uncased style configurations
+model = EncoderDecoderModel(config=config)
 
 #loipon edw mallon prepei na to kanw me to config wste na valw cross_attention
 #na swsw to modelo me: save_pretrained("mymodel") kai meta na to kanw load!!!
 if options.modelckpt is not None:
-    model = EncoderDecoderModel.from_pretrained(options.modelckpt)
-else:
-    model = EncoderDecoderModel.from_encoder_decoder_pretrained(
-        'bert-base-uncased', 'bert-base-uncased')
+    model = EncoderDecoderModel.from_pretrained(options.modelckpt,config=config)
 
 model.config.decoder_start_token_id = tokenizer.bos_token_id
 model.config.eos_token_id = tokenizer.eos_token_id
 model.config.max_length = 512
 model.config.min_length = 56
-model.config.tie_encoder_decoder = True
+
 model.to(DEVICE)
 
 #freeze some layers:
