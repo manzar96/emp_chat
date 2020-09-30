@@ -505,7 +505,7 @@ class T5TransformerTrainerMultitask:
 
                 lm_loss, clf_loss = self.train_step(sample_batch)
 
-                loss = lm_loss + clf_loss
+                loss = lm_loss + 2*clf_loss
                 avg_train_loss += loss.item()
                 avg_train_lm_loss += lm_loss.item()
                 loss.backward(retain_graph=False)
