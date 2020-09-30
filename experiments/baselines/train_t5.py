@@ -71,7 +71,7 @@ if options.modelckpt is not None:
 else:
     model = T5ForConditionalGeneration.from_pretrained('t5-base')
 model.config.output_hidden_states = True
-model.config.dropout_rate=0.3
+model.config.dropout_rate=0.2
 
 model.to(DEVICE)
 
