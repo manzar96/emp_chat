@@ -683,7 +683,7 @@ class T5TransformerTrainerMultitaskTriple:
                                                    self.clip)
                 self.optimizer.step()
                 if iters%400==0:
-                    print("lm_loss {},   clf_loss  {} , mse loss   {}".format(
+                    print("lm_loss {},   clf_loss_enc  {} , clf_loss_dec {}".format(
                         lm_loss.item(), self.aux_weight1*clf_loss_enc.item(),
                         self.aux_weight2*clf_loss_dec.item()))
                     print("total loss {}".format(loss.item()))
