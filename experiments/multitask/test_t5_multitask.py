@@ -175,7 +175,7 @@ state_dict = torch.load(options.modelckpt, map_location='cpu')
 model.load_state_dict(state_dict)
 model.to(DEVICE)
 #we set dropout to zero for testing!
-model.config.dropout_rate = 0
+model.lm_model.config.dropout_rate = 0
 
 import ipdb;ipdb.set_trace()
 # generate answers model
