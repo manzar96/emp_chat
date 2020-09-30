@@ -100,8 +100,14 @@ import ipdb;ipdb.set_trace()
 
 criterion = nn.CrossEntropyLoss(ignore_index=-100)
 # create trainer
-trainer = T5TransformerTrainerMultitaskTriple(model=model, optimizer=optimizer,
-                                 patience=5,criterion=criterion, scheduler=None,
-                                 checkpoint_dir=options.ckpt, device=DEVICE)
+trainer = T5TransformerTrainerMultitaskTriple(model=model,
+                                              optimizer=optimizer,
+                                              patience=5,
+                                              criterion=criterion,
+                                              auxilary_loss_weight1=options.multitask1,
+                                              auxilary_loss_weight2=options.multitask2,
+                                              scheduler=None,
+                                              checkpoint_dir=options.ckpt,
+                                              device=DEVICE)
 # train model
 trainer.fit(train_loader, val_loader, epochs=options.epochs)

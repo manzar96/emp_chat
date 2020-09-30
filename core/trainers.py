@@ -390,6 +390,7 @@ class T5TransformerTrainerMultitask:
                  optimizer,
                  patience,
                  criterion,
+                 auxilary_loss_weight,
                  scheduler=None,
                  checkpoint_dir=None,
                  clip=None,
@@ -403,6 +404,7 @@ class T5TransformerTrainerMultitask:
         self.device = device
         self.patience = patience
         self.criterion = criterion
+        self.aux_weight = auxilary_loss_weight
 
     def print_epoch(self, epoch, avg_train_epoch_loss, avg_val_epoch_loss,
                     cur_patience, strt):
@@ -505,7 +507,7 @@ class T5TransformerTrainerMultitask:
 
                 lm_loss, clf_loss = self.train_step(sample_batch)
 
-                loss = lm_loss + 2*clf_loss
+                loss = lm_loss + self.aux_weight*clf_loss
                 avg_train_loss += loss.item()
                 avg_train_lm_loss += lm_loss.item()
                 loss.backward(retain_graph=False)
@@ -516,12 +518,12 @@ class T5TransformerTrainerMultitask:
                 self.optimizer.step()
                 if iters%400==0:
                     print("lm_loss {},   clf_loss  {}".format(lm_loss.item(),
-                                                              clf_loss.item()))
+                                                              self.aux_weight*clf_loss.item()))
                     print("total loss {}".format(loss.item()))
                     print("Train lm loss {}".format(avg_train_lm_loss/iters))
             avg_train_loss = avg_train_loss / len(train_loader)
             avg_train_lm_loss = avg_train_lm_loss / len(train_loader)
-            print("avg train loss {} ,   avg train lm_loss {}".format(avg_train_loss,avg_train_lm_loss))
+            print("avg train loss {} ".format(avg_train_loss))
             avg_val_loss = self.calc_val_loss(val_loader)
 
             if avg_val_loss < best_val_loss:
@@ -530,7 +532,7 @@ class T5TransformerTrainerMultitask:
                 cur_patience = 0
             else:
                 cur_patience += 1
-            self.print_epoch(epoch, avg_train_loss, avg_val_loss,
+            self.print_epoch(epoch, avg_train_lm_loss, avg_val_loss,
                              cur_patience, strt)
 
     def fit(self, train_loader, val_loader, epochs):
@@ -543,6 +545,8 @@ class T5TransformerTrainerMultitaskTriple:
                  optimizer,
                  patience,
                  criterion,
+                 auxilary_loss_weight1,
+                 auxilary_loss_weight2,
                  scheduler=None,
                  checkpoint_dir=None,
                  clip=None,
@@ -556,9 +560,11 @@ class T5TransformerTrainerMultitaskTriple:
         self.device = device
         self.patience = patience
         self.criterion = criterion
-        self.cos = nn.CosineSimilarity(dim=1, eps=1e-6)
-        self.pdist = nn.PairwiseDistance(p=2)
-        self.mse_loss = nn.MSELoss()
+        # self.cos = nn.CosineSimilarity(dim=1, eps=1e-6)
+        # self.pdist = nn.PairwiseDistance(p=2)
+        # self.mse_loss = nn.MSELoss()
+        self.aux_weight1 = auxilary_loss_weight1
+        self.aux_weight2 = auxilary_loss_weight2
 
     def print_epoch(self, epoch, avg_train_epoch_loss, avg_val_epoch_loss,
                     cur_patience, strt):
@@ -640,8 +646,9 @@ class T5TransformerTrainerMultitaskTriple:
         clf_logits_dec = outputs[3]
 
         clf_loss_enc = self.criterion(clf_logits_enc, emo_label)
-        mse_loss=self.mse_loss(clf_logits_enc,clf_logits_dec)
-        return lm_loss, clf_loss_enc,mse_loss
+        clf_loss_dec = self.criterion(clf_logits_dec, emo_label)
+
+        return lm_loss, clf_loss_enc, clf_loss_dec
 
     def train_epochs(self, n_epochs, train_loader, val_loader):
 
@@ -662,9 +669,11 @@ class T5TransformerTrainerMultitaskTriple:
 
             for index, sample_batch in enumerate(tqdm(train_loader)):
 
-                lm_loss, clf_loss,mse_loss = self.train_step(sample_batch)
+                lm_loss, clf_loss_enc, clf_loss_dec = self.train_step(
+                    sample_batch)
 
-                loss = lm_loss + clf_loss + 20*mse_loss
+                loss = lm_loss + self.aux_weight1*clf_loss_enc + \
+                       self.aux_weight2*clf_loss_dec
                 avg_train_loss += loss.item()
                 avg_train_lm_loss += lm_loss.item()
                 loss.backward(retain_graph=False)
@@ -675,12 +684,13 @@ class T5TransformerTrainerMultitaskTriple:
                 self.optimizer.step()
                 if iters%400==0:
                     print("lm_loss {},   clf_loss  {} , mse loss   {}".format(
-                        lm_loss.item(), clf_loss.item(), mse_loss.item()))
+                        lm_loss.item(), self.aux_weight1*clf_loss_enc.item(),
+                        self.aux_weight2*clf_loss_dec.item()))
                     print("total loss {}".format(loss.item()))
                     print("Train lm loss {}".format(avg_train_lm_loss/iters))
             avg_train_loss = avg_train_loss / len(train_loader)
             avg_train_lm_loss = avg_train_lm_loss / len(train_loader)
-            print("avg train loss {} ,   avg train lm_loss {}".format(avg_train_loss,avg_train_lm_loss))
+            print("avg train loss {}".format(avg_train_loss))
             avg_val_loss = self.calc_val_loss(val_loader)
 
             if avg_val_loss < best_val_loss:
@@ -689,7 +699,7 @@ class T5TransformerTrainerMultitaskTriple:
                 cur_patience = 0
             else:
                 cur_patience += 1
-            self.print_epoch(epoch, avg_train_loss, avg_val_loss,
+            self.print_epoch(epoch, avg_train_lm_loss, avg_val_loss,
                              cur_patience, strt)
 
     def fit(self, train_loader, val_loader, epochs):
