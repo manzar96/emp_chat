@@ -84,7 +84,7 @@ def _generate(options, model, loader, tokenizer1, tokenizer2, device):
         outputs = model.generate(input_ids=inputs,
                        attention_mask=inputs_att,
                                  max_length=20,
-                                 length_penaly=0.6,
+                                 length_penaly=0.8,
                        do_sample=options.sampling,
                        num_beams=options.beam_size,
                        temperature=options.temp,
