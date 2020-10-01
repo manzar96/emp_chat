@@ -17,7 +17,7 @@ from core.utils.tensors import to_device
 from core.metrics.metrics import calc_sentence_bleu_score
 
 
-def calc_metrics(options,tokenizer):
+def calc_metrics(options,tokenizer1,tokenizer2):
     outfile = open(os.path.join(options.outfolder, "gen_outs.txt"), "r")
     lines = outfile.readlines()
     bleu1=[]
@@ -27,9 +27,9 @@ def calc_metrics(options,tokenizer):
     word_error_rate = []
     for line in lines:
         inp, out, trgt = line[:-1].split("\t\t")
-        inp = tokenizer.encode(inp)
-        out = tokenizer.encode(out)
-        trgt = tokenizer.encode(trgt)
+        inp = tokenizer1.encode(inp)
+        out = tokenizer2.encode(out)
+        trgt = tokenizer2.encode(trgt)
         bleu1.append(calc_sentence_bleu_score(trgt, out, n=1))
         bleu2.append(calc_sentence_bleu_score(trgt, out, n=2))
         bleu3.append(calc_sentence_bleu_score(trgt, out, n=3))
@@ -166,10 +166,10 @@ model.to(DEVICE)
 
 import ipdb;ipdb.set_trace()
 # generate answers model
-#_generate(options, model, test_loader, bert_tokenizer, gpt2_tokenizer, DEVICE)
+_generate(options, model, test_loader, bert_tokenizer, gpt2_tokenizer, DEVICE)
 
 # calc and print metrics
-calc_test_ppl(model, test_loader, DEVICE)
-#calc_metrics(options, tokenizer)
+#calc_test_ppl(model, test_loader, DEVICE)
+calc_metrics(options, bert_tokenizer, gpt2_tokenizer)
 
 #calc_similarity_trans(options)
