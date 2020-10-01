@@ -71,9 +71,12 @@ val_loader = DataLoader(val_dataset, batch_size=options.batch_size,
 model = T5ConditionalGenerationDoubleHead(model_version='t5-base',
                                           num_classes=32,
                                           device=DEVICE)
-if options.modelckpt is not None:
-    state_dict = torch.load(options.modelckpt, map_location='cpu')
-    model.load_state_dict(state_dict)
+
+# load only pretrained lm model
+model.lm_model.from_pretrained(options.modelckpt)
+# if options.modelckpt is not None:
+#     state_dict = torch.load(options.modelckpt, map_location='cpu')
+#     model.load_state_dict(state_dict)
 model.lm_model.config.output_hidden_states = True
 model.lm_model.config.dropout_rate = 0.2
 model.to(DEVICE)

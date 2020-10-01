@@ -18,8 +18,9 @@ class T5ConditionalGenerationDoubleHead(nn.Module):
             nn.Linear(in_features=self.lm_model.config.d_model,
                       out_features=300,bias=True),
             # nn.Dropout(0.1),
-            nn.BatchNorm1d(300),  # applying batch norm
-            nn.ReLU(),
+            # nn.BatchNorm1d(300),  # applying batch norm
+            # nn.ReLU(),
+            nn.GELU(),
             nn.Linear(in_features=300,
                       out_features=self.num_classes)
 
