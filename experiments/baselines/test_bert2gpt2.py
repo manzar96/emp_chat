@@ -30,6 +30,7 @@ def calc_metrics(options,tokenizer1,tokenizer2):
         inp = tokenizer1.encode(inp)
         out = tokenizer2.encode(out)
         trgt = tokenizer2.encode(trgt)
+        import ipdb;ipdb.set_trace()
         bleu1.append(calc_sentence_bleu_score(trgt, out, n=1))
         bleu2.append(calc_sentence_bleu_score(trgt, out, n=2))
         bleu3.append(calc_sentence_bleu_score(trgt, out, n=3))
@@ -82,9 +83,7 @@ def _generate(options, model, loader, tokenizer1, tokenizer2, device):
 
         outputs = model.generate(input_ids=inputs,
                        attention_mask=inputs_att,
-
-                                 max_length=40,
-
+                                 max_length=20,
                                  length_penaly=0.6,
                        do_sample=options.sampling,
                        num_beams=options.beam_size,
@@ -166,7 +165,7 @@ model.to(DEVICE)
 
 import ipdb;ipdb.set_trace()
 # generate answers model
-_generate(options, model, test_loader, bert_tokenizer, gpt2_tokenizer, DEVICE)
+#_generate(options, model, test_loader, bert_tokenizer, gpt2_tokenizer, DEVICE)
 
 # calc and print metrics
 #calc_test_ppl(model, test_loader, DEVICE)
