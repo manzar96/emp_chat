@@ -165,7 +165,7 @@ model.to(DEVICE)
 
 import ipdb;ipdb.set_trace()
 # generate answers model
-#_generate(options, model, test_loader, bert_tokenizer, gpt2_tokenizer, DEVICE)
+_generate(options, model, test_loader, bert_tokenizer, gpt2_tokenizer, DEVICE)
 
 # calc and print metrics
 #calc_test_ppl(model, test_loader, DEVICE)
