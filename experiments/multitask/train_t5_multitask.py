@@ -73,12 +73,21 @@ model = T5ConditionalGenerationDoubleHead(model_version='t5-base',
                                           device=DEVICE)
 
 # load only pretrained lm model
-model.lm_model.from_pretrained(options.modelckpt)
-# if options.modelckpt is not None:
-#     state_dict = torch.load(options.modelckpt, map_location='cpu')
-#     model.load_state_dict(state_dict)
+# model.lm_model.from_pretrained(options.modelckpt)
+if options.modelckpt is not None:
+    state_dict = torch.load(options.modelckpt, map_location='cpu')
+    model.load_state_dict(state_dict)
 model.lm_model.config.output_hidden_states = True
 model.lm_model.config.dropout_rate = 0.2
+#model.to(DEVICE)
+#freeze encoder and clf enc:
+for p in model.lm_model.encoder.parameters():
+    if p.requires_grad:
+        p.requires_grad = False
+
+for p in model.clf_enc.parameters():
+    if p.requires_grad:
+        p.requires_grad = False
 model.to(DEVICE)
 
 # params and optimizer
