@@ -171,8 +171,8 @@ test_loader = DataLoader(test_dataset, batch_size=options.batch_size,
 model = T5ConditionalGenerationDoubleHead(model_version='t5-base',
                                           num_classes=32,
                                           device=DEVICE)
-# state_dict = torch.load(options.modelckpt, map_location='cpu')
-# model.load_state_dict(state_dict)
+state_dict = torch.load(options.modelckpt, map_location='cpu')
+model.load_state_dict(state_dict)
 model.to(DEVICE)
 #we set dropout to zero for testing!
 model.lm_model.config.dropout_rate = 0
