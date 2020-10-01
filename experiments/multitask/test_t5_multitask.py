@@ -179,7 +179,7 @@ model.lm_model.config.dropout_rate = 0
 
 import ipdb;ipdb.set_trace()
 # generate answers model
-#_generate(options, model, test_loader, tokenizer, DEVICE)
+_generate(options, model, test_loader, tokenizer, DEVICE)
 
 # calc and print metrics
 # calc_test_ppl(model, test_loader, DEVICE)
