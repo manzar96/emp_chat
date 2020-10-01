@@ -79,16 +79,15 @@ if options.modelckpt is not None:
     model.load_state_dict(state_dict)
 model.lm_model.config.output_hidden_states = True
 model.lm_model.config.dropout_rate = 0.2
-#model.to(DEVICE)
-#freeze encoder and clf enc:
-for p in model.lm_model.encoder.parameters():
-    if p.requires_grad:
-        p.requires_grad = False
-
-for p in model.clf_enc.parameters():
-    if p.requires_grad:
-        p.requires_grad = False
 model.to(DEVICE)
+# #freeze encoder and clf enc:
+# for p in model.lm_model.encoder.parameters():
+#     if p.requires_grad:
+#         p.requires_grad = False
+#
+# for p in model.clf_enc.parameters():
+#     if p.requires_grad:
+#         p.requires_grad = False
 
 # params and optimizer
 numparams = sum([p.numel() for p in model.parameters()])
