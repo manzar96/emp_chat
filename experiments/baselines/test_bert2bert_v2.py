@@ -18,6 +18,32 @@ from core.utils.tensors import to_device
 from core.metrics.metrics import calc_sentence_bleu_score, \
     calc_word_error_rate
 
+def calc_metrics(options,tokenizer):
+    outfile = open(os.path.join(options.outfolder, "gen_outs.txt"), "r")
+    lines = outfile.readlines()
+    bleu1=[]
+    bleu2=[]
+    bleu3=[]
+    bleu4 = []
+    word_error_rate = []
+    for line in lines:
+        inp, out, trgt = line[:-1].split("\t\t")
+        inp = tokenizer.encode(inp)
+        out = tokenizer.encode(out)
+        trgt = tokenizer.encode(trgt)
+        bleu1.append(calc_sentence_bleu_score(trgt, out, n=1))
+        bleu2.append(calc_sentence_bleu_score(trgt, out, n=2))
+        bleu3.append(calc_sentence_bleu_score(trgt, out, n=3))
+        bleu4.append(calc_sentence_bleu_score(trgt, out, n=4))
+        word_error_rate.append(calc_word_error_rate(trgt, out))
+    print("BLEU1: {}".format(np.mean(bleu1)))
+    print("BLEU2: {}".format(np.mean(bleu2)))
+    print("BLEU3: {}".format(np.mean(bleu3)))
+    print("BLEU4: {}".format(np.mean(bleu4)))
+    print("Average BLEU score: {}".format( (np.mean(bleu1)+np.mean(
+        bleu2)+np.mean(bleu3)+np.mean(bleu4))/4.0 ) )
+    #print("Word Error Rate: {}".format(np.mean(word_error_rate)))
+
 def calc_test_ppl(model, loader, device):
     with torch.no_grad():
         avg_loss = 0
@@ -57,7 +83,8 @@ def _generate(options, model, loader, tokenizer, device):
 
         outputs = model.generate(input_ids=inputs,
                        attention_mask=inputs_att,
-                       max_length=50,
+                       max_length=40,
+                       length_penaly=0.6,
                        do_sample=options.sampling,
                        num_beams=options.beam_size,
                        temperature=options.temp,
@@ -67,12 +94,13 @@ def _generate(options, model, loader, tokenizer, device):
                        )
         # isws prepei stin generate na dwsw kai pad token id!
         #print(tokenizer.decode(outputs[0], skip_special_tokens=True))
-
-        inp_list = ["".join(tokenizer.decode(inputs[i])) for i in range(
+        inp_list = ["".join(tokenizer.decode(inputs[i],
+                                             skip_special_tokens=True)) for i in range(
             inputs.shape[0])]
-        out_list = ["".join(tokenizer.decode(outputs[i])) for i in range(
+        out_list = ["".join(tokenizer.decode(outputs[i],skip_special_tokens=True)) for i in range(
             inputs.shape[0])]
-        tgt_list = ["".join(tokenizer.decode(padded_targets[i])) for i in range(
+        tgt_list = ["".join(tokenizer.decode(padded_targets[i],skip_special_tokens=True)) for i in
+                    range(
             inputs.shape[0])]
         for i in range(len(inp_list)):
             outfile.write(inp_list[i]+"\t\t"+out_list[i]+"\t\t"+tgt_list[
@@ -120,10 +148,10 @@ model.to(DEVICE)
 
 import ipdb;ipdb.set_trace()
 # generate answers model
-#_generate(options, model, test_loader, tokenizer, DEVICE)
+_generate(options, model, test_loader, tokenizer, DEVICE)
 
 # calc and print metrics
-calc_test_ppl(model, test_loader, DEVICE)
+#calc_test_ppl(model, test_loader, DEVICE)
 #calc_metrics(options, tokenizer)
 
 #calc_similarity_trans(options)

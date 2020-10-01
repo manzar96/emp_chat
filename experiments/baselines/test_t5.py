@@ -107,7 +107,6 @@ def _generate(options, model, loader, tokenizer, device):
         outputs = model.generate(input_ids=inputs,
                        attention_mask=inputs_att,
                        max_length=40,
-                       min_length=4,
                        length_penaly=0.6,
                        do_sample=options.sampling,
                        num_beams=options.beam_size,
