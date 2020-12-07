@@ -11,7 +11,8 @@ from core.utils.parser import get_train_parser
 from core.data.empdataset import EmpatheticDataset
 from core.data.persona import PersonaChatDataset
 from core.data.collators import T5CollatorEmpChatEmo, T5CollatorPersChat
-from core.models.huggingface.t5_extended import T5ConditionalGenerationEmotions
+from core.models.huggingface.t5_extended import \
+    T5ConditionalGenerationEmotions, T5ConditionalGenerationEmotionsShared
 from core.utils.transforms import ToTensor
 from core.trainers import T5TransformerTrainerSimilarity
 
@@ -54,9 +55,13 @@ val_loader = DataLoader(val_dataset, batch_size=options.batch_size,
                           collate_fn=collator_fn)
 
 # create model
-model = T5ConditionalGenerationEmotions(model_version='t5-base',
+# model = T5ConditionalGenerationEmotions(model_version='t5-base',
+#                                           num_classes=32,
+#                                           device=DEVICE)
+model = T5ConditionalGenerationEmotionsShared(model_version='t5-base',
                                           num_classes=32,
                                           device=DEVICE)
+
 
 # load only pretrained lm model
 # model.lm_model.from_pretrained(options.modelckpt)
