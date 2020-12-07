@@ -1151,8 +1151,9 @@ class T5TransformerTrainerSimilarity:
                 dec_emo_repr = outputs[5]
                 # similarity_loss = torch.mean(self.similarity(enc_emo_repr,
                 #                                         dec_emo_repr))
-                similarity_loss = torch.mean(self.similarity(enc_emo_repr,
-                                                        dec_emo_repr,1))
+                similarity_loss = self.similarity(enc_emo_repr,
+                                                  dec_emo_repr,
+                                                  torch.tensor(1, device=self.device))
                 clf_loss = self.criterion(clf_logits, emo_label)
 
                 # avg_val_loss = avg_val_loss + lm_loss + clf_loss-similarity_loss
@@ -1189,8 +1190,8 @@ class T5TransformerTrainerSimilarity:
         dec_emo_repr = outputs[5]
         # similarity_loss = torch.mean(self.similarity(enc_emo_repr,
         #                                              dec_emo_repr))
-        similarity_loss = torch.mean(self.similarity(enc_emo_repr,
-                                                     dec_emo_repr, 1))
+        similarity_loss = self.similarity(enc_emo_repr, dec_emo_repr,
+                          torch.tensor(1, device=self.device))
         clf_loss = self.criterion(clf_logits_enc, emo_label)
         return lm_loss, clf_loss, similarity_loss
 
