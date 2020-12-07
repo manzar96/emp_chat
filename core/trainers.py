@@ -1186,7 +1186,6 @@ class T5TransformerTrainerSimilarity:
         similarity_loss = torch.mean(self.similarity(enc_emo_repr,
                                                      dec_emo_repr))
         clf_loss = self.criterion(clf_logits_enc, emo_label)
-        import ipdb;ipdb.set_trace()
         return lm_loss, clf_loss, similarity_loss
 
     def train_epochs(self, n_epochs, train_loader, val_loader):
