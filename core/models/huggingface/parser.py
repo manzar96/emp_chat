@@ -28,17 +28,19 @@ def add_cmdline_args_gen(argparser):
         help='Applies a length penalty. Set to 0 for no penalty.',
     )
     argparser.add_argument(
-        '--topk', type=int, default=10, help='K used in Top K sampling'
+        #'--topk', type=int, default=10, help='K used in Top K sampling'
+        '--topk', type=int, default=None, help='K used in Top K sampling'
     )
     argparser.add_argument(
-        '--topp', type=float, default=0.9, help='p used in nucleus sampling'
+        #'--topp', type=float, default=0.9, help='p used in nucleus sampling'
+        '--topp', type=float, default=None, help='p used in nucleus sampling'
     )
 
     argparser.add_argument(
-        '--temp',
-        type=float,
-        default=1.0,
-        help='temperature to add during decoding',
+        #'--temp',type=float,default=1.0,help='temperature to add during
+        # decoding',
+        '--temp',type=float,default=None,help='temperature to add during '
+                                            'decoding',
     )
 
     return argparser
