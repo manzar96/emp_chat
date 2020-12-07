@@ -3,6 +3,7 @@ examples/MNIST/
 cache/*
 checkpoints/*
 data/*
+outputs/*
 .idea/
 
 # Byte-compiled / optimized / DLL files
