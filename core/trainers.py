@@ -1143,13 +1143,15 @@ class T5TransformerTrainerSimilarity:
                 outputs = self.model(emolabel=emo_label, input_ids=inputs,
                                      attention_mask=inputs_att,
                                      labels=repl_targets)
-                import ipdb;ipdb.set_trace()
                 lm_loss = outputs[0]
                 lm_logits = outputs[1]
                 clf_logits = outputs[2]
+                enc_emo_repr = outputs[3]
+                dec_emo_repr = outputs[5]
+                similarity_loss = self.similarity(enc_emo_repr, dec_emo_repr)
                 clf_loss = self.criterion(clf_logits, emo_label)
 
-                avg_val_loss = avg_val_loss + lm_loss + clf_loss
+                avg_val_loss = avg_val_loss + lm_loss + clf_loss-similarity_loss
                 avg_val_lm_loss = avg_val_lm_loss + lm_loss
 
 
