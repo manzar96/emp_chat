@@ -202,7 +202,7 @@ class T5CollatorEmpChat(object):
                targets_pad_mask
 
 
-class T5CollatorEmpChatMultitask(object):
+class T5CollatorEmpChatEmo(object):
     def __init__(self, pad_indx=0, device='cpu'):
         self.pad_indx = pad_indx
         self.device = device

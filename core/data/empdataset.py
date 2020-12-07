@@ -119,7 +119,7 @@ class EmpatheticDataset(Dataset):
             for t in self.transforms:
                 hist = t(hist)
                 ans = t(ans)
-        label = mktensor(self.label2idx[label])
+        label = mktensor(self.label2idx[label],dtype=torch.long)
         return hist, ans, label
 
     def getid(self, index):
