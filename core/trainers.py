@@ -1097,7 +1097,8 @@ class T5TransformerTrainerSimilarity:
         self.patience = patience
         self.criterion = criterion
         self.aux_weight = auxilary_loss_weight
-        self.similarity = nn.CosineSimilarity(dim=1, eps=1e-08)
+        # self.similarity = nn.CosineSimilarity(dim=1, eps=1e-08)
+        self.similarity = nn.CosineEmbeddingLoss()
 
     def print_epoch(self, epoch, avg_train_epoch_loss, avg_val_epoch_loss,
                     cur_patience, strt):
@@ -1148,11 +1149,14 @@ class T5TransformerTrainerSimilarity:
                 clf_logits = outputs[2]
                 enc_emo_repr = outputs[3]
                 dec_emo_repr = outputs[5]
+                # similarity_loss = torch.mean(self.similarity(enc_emo_repr,
+                #                                         dec_emo_repr))
                 similarity_loss = torch.mean(self.similarity(enc_emo_repr,
-                                                        dec_emo_repr))
+                                                        dec_emo_repr,1))
                 clf_loss = self.criterion(clf_logits, emo_label)
 
-                avg_val_loss = avg_val_loss + lm_loss + clf_loss-similarity_loss
+                # avg_val_loss = avg_val_loss + lm_loss + clf_loss-similarity_loss
+                avg_val_loss = avg_val_loss + lm_loss + clf_loss+similarity_loss
                 avg_val_lm_loss = avg_val_lm_loss + lm_loss
 
 
@@ -1183,8 +1187,10 @@ class T5TransformerTrainerSimilarity:
         clf_logits_enc = outputs[2]
         enc_emo_repr = outputs[3]
         dec_emo_repr = outputs[5]
+        # similarity_loss = torch.mean(self.similarity(enc_emo_repr,
+        #                                              dec_emo_repr))
         similarity_loss = torch.mean(self.similarity(enc_emo_repr,
-                                                     dec_emo_repr))
+                                                     dec_emo_repr, 1))
         clf_loss = self.criterion(clf_logits_enc, emo_label)
         return lm_loss, clf_loss, similarity_loss
 
@@ -1202,6 +1208,8 @@ class T5TransformerTrainerSimilarity:
 
             avg_train_loss = 0
             avg_train_lm_loss = 0
+            avg_clf_loss = 0
+            avg_similarity = 0
 
             strt = time.time()
 
@@ -1210,8 +1218,11 @@ class T5TransformerTrainerSimilarity:
                 lm_loss, clf_loss, similarity_loss = self.train_step(
                     sample_batch)
 
-                loss = lm_loss + self.aux_weight*clf_loss - similarity_loss
+                # loss = lm_loss + self.aux_weight*clf_loss - similarity_loss
+                loss = lm_loss + self.aux_weight*clf_loss + similarity_loss
                 avg_train_loss += loss.item()
+                avg_clf_loss += clf_loss.item()
+                avg_similarity += similarity_loss.item()
                 avg_train_lm_loss += lm_loss.item()
                 loss.backward(retain_graph=False)
                 iters += 1
@@ -1222,11 +1233,15 @@ class T5TransformerTrainerSimilarity:
                 if iters%400==0:
                     print("lm_loss {},   clf_loss  {}".format(lm_loss.item(),
                                                               self.aux_weight*clf_loss.item()))
-                    print("total loss {}".format(loss.item()))
-                    print("Train lm loss {}".format(avg_train_lm_loss/iters))
+                    # print("total loss {}".format(loss.item()))
+                    # print("Train lm loss {}".format(avg_train_lm_loss/iters))
             avg_train_loss = avg_train_loss / len(train_loader)
             avg_train_lm_loss = avg_train_lm_loss / len(train_loader)
+            avg_clf_loss = avg_clf_loss / len(train_loader)
+            avg_similarity = avg_similarity / len(train_loader)
             print("avg train loss {} ".format(avg_train_loss))
+            print("avg train clf loss {} ".format(avg_clf_loss))
+            print("avg train similarity loss {} ".format(avg_similarity))
             avg_val_loss = self.calc_val_loss(val_loader)
 
             if avg_val_loss < best_val_loss:
