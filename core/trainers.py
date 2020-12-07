@@ -1117,7 +1117,7 @@ class T5TransformerTrainerSimilarity:
         if not os.path.exists(self.checkpoint_dir):
             os.makedirs(self.checkpoint_dir)
         torch.save(self.model.state_dict(), os.path.join(
-            self.checkpoint_dir, 'model_checkpoint'),
+            self.checkpoint_dir, 'model_checkpoint.pth'),
                    _use_new_zipfile_serialization=False)
         # we use the proposed method for saving T5 model
         # self.model.save_pretrained(os.path.join(self.checkpoint_dir,'model_checkpoint'))
