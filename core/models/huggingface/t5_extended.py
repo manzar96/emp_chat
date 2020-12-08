@@ -96,10 +96,11 @@ class T5ConditionalGenerationEmotions(nn.Module):
     emotions.
 
     """
-    def __init__(self, model_version, num_classes=32, drop=0.2, device='cpu'):
+    def __init__(self, lm_model, num_classes=32, drop=0.2, device='cpu'):
         super(T5ConditionalGenerationEmotions, self).__init__()
+        self.config = lm_model.config
         self.num_classes = num_classes
-        self.lm_model = T5ForConditionalGeneration.from_pretrained(model_version)
+        self.lm_model = lm_model
         self.dropout = drop
         self.clf_enc_layer1 = nn.Sequential(
             nn.Linear(in_features=self.lm_model.config.d_model,
@@ -156,10 +157,11 @@ class T5ConditionalGenerationEmotionsShared(nn.Module):
     emotions.
 
     """
-    def __init__(self, model_version, num_classes=32, drop=0.2, device='cpu'):
+    def __init__(self, lm_model, num_classes=32, drop=0.2, device='cpu'):
         super(T5ConditionalGenerationEmotionsShared, self).__init__()
         self.num_classes = num_classes
-        self.lm_model = T5ForConditionalGeneration.from_pretrained(model_version)
+        self.config = lm_model.config
+        self.lm_model = lm_model
         self.dropout = drop
         self.clf_layer1 = nn.Sequential(
             nn.Linear(in_features=self.lm_model.config.d_model,

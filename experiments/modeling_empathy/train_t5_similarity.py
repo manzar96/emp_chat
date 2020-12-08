@@ -55,10 +55,8 @@ val_loader = DataLoader(val_dataset, batch_size=options.batch_size,
                           collate_fn=collator_fn)
 
 # create model
-# model = T5ConditionalGenerationEmotions(model_version='t5-base',
-#                                           num_classes=32,
-#                                           device=DEVICE)
-model = T5ConditionalGenerationEmotions(model_version='t5-base',
+lm_model = T5ForConditionalGeneration.from_pretrained('t5-base')
+model = T5ConditionalGenerationEmotions(lm_model=lm_model,
                                           num_classes=32,
                                           device=DEVICE)
 
