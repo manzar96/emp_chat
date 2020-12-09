@@ -56,13 +56,12 @@ val_loader = DataLoader(val_dataset, batch_size=options.batch_size,
 
 # create model
 lm_model = T5ForConditionalGeneration.from_pretrained('t5-base')
-model = T5ConditionalGenerationEmotionsShared(lm_model=lm_model,
+model = T5ConditionalGenerationEmotions(lm_model=lm_model,
                                           num_classes=32,
                                           device=DEVICE)
 
 
 # load only pretrained lm model
-# model.lm_model.from_pretrained(options.modelckpt)
 if options.modelckpt is not None:
     state_dict = torch.load(options.modelckpt, map_location='cpu')
     model.load_state_dict(state_dict)

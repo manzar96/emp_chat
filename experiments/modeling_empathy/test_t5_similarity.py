@@ -12,7 +12,7 @@ from core.models.huggingface.t5_extended import \
 from core.utils.parser import get_test_parser
 from core.models.huggingface.parser import add_cmdline_args_gen
 from core.data.empdataset import EmpatheticDataset
-from core.data.collators import T5CollatorEmpChat
+from core.data.collators import T5CollatorEmpChatEmo
 from core.utils.transforms import ToTensor
 from core.utils.tensors import to_device
 from core.metrics.metrics import calc_sentence_bleu_score, \
@@ -28,15 +28,18 @@ def calc_test_ppl(model, loader, device):
             inputs = to_device(batch[0], device=device)
             inputs_att = to_device(batch[1], device=device)
             pad_targets = to_device(batch[2], device=device)
-            targets = to_device(batch[3], device=device)
+            repl_targets = to_device(batch[3], device=device)
             targets_att = to_device(batch[4], device=device)
-
-            outputs = model(input_ids=inputs, attention_mask=inputs_att,
-                            labels=targets)
+            emo_label = to_device(batch[5], device=device)
+            outputs = model(emolabel=emo_label, input_ids=inputs,
+                                 attention_mask=inputs_att,
+                                 labels=repl_targets)
 
             lm_loss = outputs[0]
-            pred_scores = outputs[1]
-            last_hidden = outputs[2]
+            lm_logits = outputs[1]
+            clf_logits = outputs[2]
+            enc_emo_repr = outputs[3]
+            dec_emo_repr = outputs[5]
             avg_loss += lm_loss.item()
 
         avg_loss = avg_loss / len(loader)
@@ -81,10 +84,10 @@ def _generate(options, model, loader, tokenizer, device):
         inputs_att = to_device(batch[1], device=device)
         pad_targets = to_device(batch[2], device=device)
 
-        outputs = model.generate(input_ids=inputs,
+        outputs = model.lm_model.generate(input_ids=inputs,
                        attention_mask=inputs_att,
                        max_length=40,
-                       length_penaly=0.6,
+                       length_penalty=0.6,
                        do_sample=options.sampling,
                        num_beams=options.beam_size,
                        temperature=options.temp,
@@ -92,11 +95,17 @@ def _generate(options, model, loader, tokenizer, device):
                        top_p=options.topp,
                        num_return_sequences=options.Nbest,
                        )
-        inp_list = ["".join(tokenizer.decode(inputs[i])) for i in range(
+        inp_list = ["".join(tokenizer.decode(inputs[i],
+                                             skip_special_tokens=True)) for i
+                    in range(
             inputs.shape[0])]
-        out_list = ["".join(tokenizer.decode(outputs[i])) for i in range(
+        out_list = ["".join(tokenizer.decode(outputs[i],
+                                             skip_special_tokens=True)) for i
+                    in range(
             inputs.shape[0])]
-        tgt_list = ["".join(tokenizer.decode(pad_targets[i])) for i in range(
+        tgt_list = ["".join(tokenizer.decode(pad_targets[i],
+                                             skip_special_tokens=True)) for i
+                    in range(
             inputs.shape[0])]
         for i in range(len(inp_list)):
             outfile.write(inp_list[i]+"\t\t"+out_list[i]+"\t\t"+tgt_list[
@@ -121,7 +130,7 @@ else:
     raise NotImplementedError
 
 # make transforms
-tokenizer = T5Tokenizer.from_pretrained('t5-small')
+tokenizer = T5Tokenizer.from_pretrained('t5-base')
 
 # we dont use map on dataset! so transforms will be [] and HuggingFace
 # tokenizers will be applied
@@ -130,7 +139,7 @@ test_dataset.tokenizer_ans = tokenizer
 
 
 # load test data
-collator_fn = T5CollatorEmpChat(device='cpu')
+collator_fn = T5CollatorEmpChatEmo(device='cpu')
 test_loader = DataLoader(test_dataset, batch_size=options.batch_size,
                          drop_last=False, shuffle=True, collate_fn=collator_fn)
 
