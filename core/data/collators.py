@@ -3,7 +3,7 @@ from torch.nn.utils.rnn import pad_sequence, pack_padded_sequence
 
 from core.utils.masks import pad_mask, subsequent_mask
 from core.utils.tensors import mktensor
-
+import random
 
 class EncoderDecoderTransformerCollatorEmpChat(object):
     def __init__(self, pad_indx=0, device='cpu'):
@@ -239,6 +239,68 @@ class T5CollatorEmpChatEmo(object):
         emo_labels = mktensor(labels, dtype=torch.long)
         return padded_inputs, inputs_pad_mask, padded_targets,replaced_targ, \
                targets_pad_mask,emo_labels
+
+
+class T5CollatorEmpChatEmoNegSampling(object):
+    def __init__(self, pad_indx=0, device='cpu'):
+        self.pad_indx = pad_indx
+        self.device = device
+
+    def replace_pad_labels(self,mytensor,value):
+        tmp = mytensor.clone()
+        tmp[mytensor==0] = value
+        return tmp
+
+    def __call__(self, batch):
+        inputs, targets, labels, neg = map(list, zip(*batch))
+        batch_size = len(inputs)
+        neg = [item for s in neg for item in s]
+        input_lengths = torch.tensor(
+            [len(s) for s in inputs], device=self.device)
+        targets_lengths = torch.tensor(
+            [len(s) for s in targets], device=self.device)
+        neg_lengths = torch.tensor(
+            [len(s) for s in neg], device=self.device)
+
+        # attention mask
+        max_length = max(input_lengths)
+        inputs_pad_mask = pad_mask(input_lengths, max_length=max_length,
+                                   device=self.device)
+        max_length = max(targets_lengths)
+        targets_pad_mask = pad_mask(targets_lengths, max_length=max_length,
+                                   device=self.device)
+        max_length = max(neg_lengths)
+        neg_pad_mask = pad_mask(neg_lengths, max_length=max_length,
+                                    device=self.device).reshape(batch_size,-1,
+                                                                max_length)
+
+        # Pad inputs and targets
+        padded_inputs = (
+            pad_sequence(inputs, batch_first=True,
+                         padding_value=self.pad_indx)
+                .to(self.device))
+        padded_targets = (
+            pad_sequence(targets, batch_first=True,
+                         padding_value=self.pad_indx)
+                .to(self.device))
+        replaced_targ = self.replace_pad_labels(padded_targets, -100)
+        padded_neg = (
+            pad_sequence(neg, batch_first=True,
+                         padding_value=self.pad_indx)
+                .to(self.device))
+        replaced_neg = self.replace_pad_labels(padded_neg, -100)
+        replaced_neg = replaced_neg.reshape(batch_size,-1,max_length)
+        emo_labels = mktensor(labels, dtype=torch.long)
+        number_of_samples = replaced_neg.shape[1]
+        # perform sampling
+        sample_indexes = [random.randint(0,number_of_samples-1) for i in \
+                range(batch_size)]
+        list_neg = [replaced_neg[i,sample_indexes[i],:] for i in range(
+            batch_size)]
+        replaced_neg = torch.stack(list_neg)
+        return padded_inputs, inputs_pad_mask, padded_targets,replaced_targ, \
+               targets_pad_mask,emo_labels,replaced_neg,neg_pad_mask
+
 
 class T5CollatorPersChat(object):
     def __init__(self, pad_indx=0, device='cpu'):
