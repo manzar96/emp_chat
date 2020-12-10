@@ -61,27 +61,25 @@ val_loader = DataLoader(val_dataset, batch_size=options.batch_size,
                           collate_fn=collator_fn2)
 
 # create model
-lm_model = T5ForConditionalGeneration.from_pretrained('t5-base')
+# lm_model = T5ForConditionalGeneration.from_pretrained('t5-base')
+lm_model = T5ForConditionalGeneration.from_pretrained(options.modelckpt)
 model = T5ConditionalGenerationEmotionsNeg(lm_model=lm_model,
                                           num_classes=32,
                                           device=DEVICE)
 
 
 # load only pretrained lm model
-if options.modelckpt is not None:
-    state_dict = torch.load(options.modelckpt, map_location='cpu')
-    model.load_state_dict(state_dict)
+# if options.modelckpt is not None:
+#     state_dict = torch.load(options.modelckpt, map_location='cpu')
+#     model.load_state_dict(state_dict)
 model.lm_model.config.output_hidden_states = True
 model.lm_model.config.dropout_rate = 0.2
 model.to(DEVICE)
-# #freeze encoder and clf enc:
-# for p in model.lm_model.encoder.parameters():
-#     if p.requires_grad:
-#         p.requires_grad = False
-#
-# for p in model.clf_enc.parameters():
-#     if p.requires_grad:
-#         p.requires_grad = False
+#freeze encoder and clf enc:
+for p in model.lm_model.encoder.parameters():
+    if p.requires_grad:
+        p.requires_grad = False
+
 
 # params and optimizer
 numparams = sum([p.numel() for p in model.parameters()])
