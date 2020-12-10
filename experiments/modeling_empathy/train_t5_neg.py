@@ -103,12 +103,13 @@ import ipdb;ipdb.set_trace()
 criterion = nn.CrossEntropyLoss(ignore_index=-100)
 # create trainer
 trainer = T5TransformerTrainerNeg(model=model,
-                                        optimizer=optimizer,
-                                        patience=5, criterion=criterion,
-                                        scheduler=None,
+                                  optimizer=optimizer,
+                                  patience=5,
+                                  criterion=criterion,
+                                  scheduler=None,
                                   multitask1=options.multitask1,
                                   multitask2=options.multitask2,
-                                        checkpoint_dir=options.ckpt,
-                                        device=DEVICE)
+                                  checkpoint_dir=options.ckpt,
+                                  device=DEVICE)
 # train model
 trainer.fit(train_loader, val_loader, epochs=options.epochs)

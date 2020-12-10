@@ -1418,8 +1418,8 @@ class T5TransformerTrainerNeg:
                     sample_batch)
 
                 # loss = lm_loss + self.aux_weight*clf_loss - similarity_loss
-                loss = lm_loss + 0.8*clf_loss + \
-                                   0.6*similarity_loss
+                loss = lm_loss + self.multitask1*clf_loss + \
+                                   self.multitask2*similarity_loss
                 avg_train_loss += loss.item()
                 avg_clf_loss += clf_loss.item()
                 avg_similarity += similarity_loss.item()
@@ -1434,7 +1434,7 @@ class T5TransformerTrainerNeg:
                 self.optimizer.step()
                 if iters%400==0:
                     print("lm_loss {},   clf_loss  {}".format(lm_loss.item(),
-                                                              0.8*clf_loss.item()))
+                                                              self.multitask1*clf_loss.item()))
                     # print("total loss {}".format(loss.item()))
                     # print("Train lm loss {}".format(avg_train_lm_loss/iters))
             avg_train_loss = avg_train_loss / len(train_loader)
