@@ -264,3 +264,27 @@ class T5ConditionalGenerationEmotionsSharedNeg(nn.Module):
         return lm_loss, lm_logits, clf_enc_logits_emo, clf_enc_emo_repr, \
                clf_dec_logits_emo, clf_dec_emo_repr, clf_dec_logits_emo_neg, \
                clf_dec_emo_repr_neg
+
+    def forward_validate(self, *args, **kwargs):
+
+        emo_label = kwargs['emolabel']
+        kwargs.pop('emolabel', None)
+
+        outputs = self.lm_model(**kwargs, output_hidden_states=True,
+                                return_dict=True)
+        lm_loss = outputs['loss']
+        lm_logits = outputs['logits']
+        dec_hidden_states = outputs['decoder_hidden_states']
+        enc_last_hidden = outputs['encoder_last_hidden_state']
+        enc_hidden_states = outputs['encoder_hidden_states']
+        last_dec_hidden = dec_hidden_states[-1]
+        enc_last_hidden_last_timestep = enc_last_hidden[:,-1,:]
+        last_dec_hidden_last_timestep = last_dec_hidden[:,-1,:]
+        clf_enc_emo_repr = self.clf_layer1(enc_last_hidden_last_timestep)
+        clf_enc_logits_emo = self.clf_layer2(clf_enc_emo_repr)
+
+        clf_dec_emo_repr = self.clf_layer1(last_dec_hidden_last_timestep)
+        clf_dec_logits_emo = self.clf_layer2(clf_dec_emo_repr)
+
+        return lm_loss, lm_logits, clf_enc_logits_emo, clf_enc_emo_repr, \
+               clf_dec_logits_emo, clf_dec_emo_repr

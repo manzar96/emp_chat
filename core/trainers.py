@@ -4,6 +4,7 @@ import torch
 import math
 import time
 from tqdm import tqdm
+import torch.nn.functional as F
 from typing import cast, List, Optional, Tuple, TypeVar
 from core.utils.tensors import to_device
 import random
@@ -1321,7 +1322,8 @@ class T5TransformerTrainerNeg:
                 targets_att = to_device(batch[4], device=self.device)
                 emo_label = to_device(batch[5], device=self.device)
 
-                outputs = self.model(emolabel=emo_label, input_ids=inputs,
+                outputs = self.model.forward_validate(emolabel=emo_label,
+                                            input_ids=inputs,
                                      attention_mask=inputs_att,
                                      labels=repl_targets)
                 lm_loss = outputs[0]
@@ -1371,11 +1373,19 @@ class T5TransformerTrainerNeg:
         lm_logits = outputs[1]
         clf_logits_enc = outputs[2]
         enc_emo_repr = outputs[3]
+        clf_logits_dec = outputs[4]
         dec_emo_repr = outputs[5]
         dec_emo_repr_neg = outputs[7]
         similarity_loss = self.similarity(dec_emo_repr, enc_emo_repr,dec_emo_repr_neg)
         clf_loss = self.criterion(clf_logits_enc, emo_label)
-        return lm_loss, clf_loss, similarity_loss
+        enc_emo = F.softmax(clf_logits_enc,dim=1)
+        enc_emo = torch.argmax(enc_emo, dim=1)
+        dec_emo = F.softmax(clf_logits_dec,dim=1)
+        dec_emo = torch.argmax(dec_emo, dim=1)
+
+        enc_acc = sum(enc_emo==emo_label).item() / inputs.shape[0]
+        dec_acc = sum(enc_emo==dec_emo).item() / inputs.shape[0]
+        return lm_loss, clf_loss, similarity_loss,enc_acc,dec_acc
 
     def train_epochs(self, n_epochs, train_loader, val_loader):
 
@@ -1393,12 +1403,14 @@ class T5TransformerTrainerNeg:
             avg_train_lm_loss = 0
             avg_clf_loss = 0
             avg_similarity = 0
-
+            avg_enc_acc = 0
+            avg_dec_acc = 0
             strt = time.time()
 
             for index, sample_batch in enumerate(tqdm(train_loader)):
 
-                lm_loss, clf_loss, similarity_loss = self.train_step(
+                lm_loss, clf_loss, similarity_loss,enc_acc,dec_acc = \
+                    self.train_step(
                     sample_batch)
 
                 # loss = lm_loss + self.aux_weight*clf_loss - similarity_loss
@@ -1408,6 +1420,8 @@ class T5TransformerTrainerNeg:
                 avg_clf_loss += clf_loss.item()
                 avg_similarity += similarity_loss.item()
                 avg_train_lm_loss += lm_loss.item()
+                avg_enc_acc += enc_acc
+                avg_dec_acc += dec_acc
                 loss.backward(retain_graph=False)
                 iters += 1
                 if self.clip is not None:
@@ -1423,9 +1437,14 @@ class T5TransformerTrainerNeg:
             avg_train_lm_loss = avg_train_lm_loss / len(train_loader)
             avg_clf_loss = avg_clf_loss / len(train_loader)
             avg_similarity = avg_similarity / len(train_loader)
+            avg_enc_acc = avg_enc_acc / len(train_loader)
+            avg_dec_acc = avg_dec_acc / len(train_loader)
+
             print("avg train loss {} ".format(avg_train_loss))
             print("avg train clf loss {} ".format(avg_clf_loss))
             print("avg train similarity loss {} ".format(avg_similarity))
+            print("avg enc acc {} ".format(avg_enc_acc))
+            print("avg dec acc {} ".format(avg_dec_acc))
             avg_val_loss = self.calc_val_loss(val_loader)
 
             if avg_val_loss < best_val_loss:
