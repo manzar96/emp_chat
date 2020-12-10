@@ -1266,6 +1266,8 @@ class T5TransformerTrainerNeg:
                  optimizer,
                  patience,
                  criterion,
+                 multitask1=1.0,
+                 multitask2=1.0,
                  scheduler=None,
                  checkpoint_dir=None,
                  clip=None,
@@ -1280,6 +1282,8 @@ class T5TransformerTrainerNeg:
         self.patience = patience
         self.criterion = criterion
         self.similarity = nn.TripletMarginLoss(margin=1.0,p=2)
+        self.multitask1 = multitask1
+        self.multitask2 = multitask2
 
     def print_epoch(self, epoch, avg_train_epoch_loss, avg_val_epoch_loss,
                     cur_patience, strt):

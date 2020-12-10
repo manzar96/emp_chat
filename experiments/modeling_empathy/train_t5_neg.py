@@ -13,8 +13,8 @@ from core.data.persona import PersonaChatDataset
 from core.data.collators import T5CollatorEmpChatEmo, \
     T5CollatorEmpChatEmoNegSampling, T5CollatorPersChat
 from core.models.huggingface.t5_extended import \
-    T5ConditionalGenerationEmotions, T5ConditionalGenerationEmotionsSharedNeg
-from core.utils.transforms import ToTensor
+    T5ConditionalGenerationEmotionsNeg, T5ConditionalGenerationEmotionsSharedNeg
+
 from core.trainers import T5TransformerTrainerNeg
 
 
@@ -62,7 +62,7 @@ val_loader = DataLoader(val_dataset, batch_size=options.batch_size,
 
 # create model
 lm_model = T5ForConditionalGeneration.from_pretrained('t5-base')
-model = T5ConditionalGenerationEmotionsSharedNeg(lm_model=lm_model,
+model = T5ConditionalGenerationEmotionsNeg(lm_model=lm_model,
                                           num_classes=32,
                                           device=DEVICE)
 
@@ -108,6 +108,8 @@ trainer = T5TransformerTrainerNeg(model=model,
                                         optimizer=optimizer,
                                         patience=5, criterion=criterion,
                                         scheduler=None,
+                                  multitask1=options.multitask1,
+                                  multitask2=options.multitask2,
                                         checkpoint_dir=options.ckpt,
                                         device=DEVICE)
 # train model
