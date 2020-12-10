@@ -1374,7 +1374,6 @@ class T5TransformerTrainerNeg:
         dec_emo_repr = outputs[5]
         dec_emo_repr_neg = outputs[7]
         similarity_loss = self.similarity(dec_emo_repr, enc_emo_repr,dec_emo_repr_neg)
-        print(similarity_loss)
         clf_loss = self.criterion(clf_logits_enc, emo_label)
         return lm_loss, clf_loss, similarity_loss
 
