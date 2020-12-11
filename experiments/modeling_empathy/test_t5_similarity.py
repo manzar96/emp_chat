@@ -112,7 +112,7 @@ def _generate(options, model, loader, tokenizer, device):
                 i]+"\n")
 
     outfile.close()
-    print(len(loader))
+
 
 
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -160,7 +160,7 @@ import ipdb;ipdb.set_trace()
 _generate(options, model, test_loader, tokenizer, DEVICE)
 
 # calc and print metrics
-calc_test_ppl(model, test_loader, DEVICE)
+# calc_test_ppl(model, test_loader, DEVICE)
 calc_metrics(options, tokenizer)
 
 #calc_similarity_trans(options)
