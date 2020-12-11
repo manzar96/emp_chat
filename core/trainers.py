@@ -1083,7 +1083,8 @@ class T5TransformerTrainerSimilarity:
                  optimizer,
                  patience,
                  criterion,
-                 auxilary_loss_weight,
+                 auxilary_loss_weight1,
+                 auxilary_loss_weight2,
                  scheduler=None,
                  checkpoint_dir=None,
                  clip=None,
@@ -1097,7 +1098,8 @@ class T5TransformerTrainerSimilarity:
         self.device = device
         self.patience = patience
         self.criterion = criterion
-        self.aux_weight = auxilary_loss_weight
+        self.aux_weight1 = auxilary_loss_weight1
+        self.aux_weight2 = auxilary_loss_weight2
         # self.similarity = nn.CosineSimilarity(dim=1, eps=1e-08)
         self.similarity = nn.CosineEmbeddingLoss()
 
@@ -1157,8 +1159,9 @@ class T5TransformerTrainerSimilarity:
                                                   torch.tensor(1, device=self.device))
                 clf_loss = self.criterion(clf_logits, emo_label)
 
-                # avg_val_loss = avg_val_loss + lm_loss + clf_loss-similarity_loss
-                avg_val_loss = avg_val_loss + lm_loss + clf_loss+similarity_loss
+                avg_val_loss = avg_val_loss + lm_loss + \
+                               self.aux_weight1*clf_loss + \
+                               self.aux_weight2*similarity_loss
                 avg_val_lm_loss = avg_val_lm_loss + lm_loss
 
 
@@ -1221,11 +1224,10 @@ class T5TransformerTrainerSimilarity:
                     sample_batch)
 
                 # loss = lm_loss + self.aux_weight*clf_loss - similarity_loss
-                loss = lm_loss + 0.8*self.aux_weight*clf_loss + \
-                                   0.6*similarity_loss
+                loss = lm_loss + self.aux_weight1*clf_loss + self.aux_weight2*similarity_loss
                 avg_train_loss += loss.item()
-                avg_clf_loss += clf_loss.item()
-                avg_similarity += similarity_loss.item()
+                avg_clf_loss += self.aux_weight1*clf_loss.item()
+                avg_similarity += self.aux_weight2*similarity_loss.item()
                 avg_train_lm_loss += lm_loss.item()
                 loss.backward(retain_graph=False)
                 iters += 1
@@ -1235,7 +1237,7 @@ class T5TransformerTrainerSimilarity:
                 self.optimizer.step()
                 if iters%400==0:
                     print("lm_loss {},   clf_loss  {}".format(lm_loss.item(),
-                                                              0.8*clf_loss.item()))
+                                                              self.aux_weight1*clf_loss.item()))
                     # print("total loss {}".format(loss.item()))
                     # print("Train lm loss {}".format(avg_train_lm_loss/iters))
             avg_train_loss = avg_train_loss / len(train_loader)

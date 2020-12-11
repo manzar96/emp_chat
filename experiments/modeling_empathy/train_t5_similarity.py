@@ -100,7 +100,8 @@ criterion = nn.CrossEntropyLoss(ignore_index=-100)
 # create trainer
 trainer = T5TransformerTrainerSimilarity(model=model,
                                         optimizer=optimizer,
-                                        auxilary_loss_weight=options.multitask1,
+                                        auxilary_loss_weight1=options.multitask1,
+                                        auxilary_loss_weight2=options.multitask2,
                                         patience=5, criterion=criterion,
                                         scheduler=None,
                                         checkpoint_dir=options.ckpt,
