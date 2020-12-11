@@ -77,6 +77,11 @@ def get_train_parser():
                                                       "second auxilary loss"
     )
 
+    parser.add_argument(
+        "--margin", type=float, default=1.0, help="weight for "
+                                                      "second auxilary loss"
+    )
+
     return parser
 
 

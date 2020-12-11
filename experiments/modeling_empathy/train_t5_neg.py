@@ -87,11 +87,13 @@ train_numparams = sum([p.numel() for p in model.parameters() if
                        p.requires_grad])
 print('Total Parameters: {}'.format(numparams))
 print('Trainable Parameters: {}'.format(train_numparams))
-optimizer = Adam(
-    [p for p in model.parameters() if p.requires_grad],
-    lr=options.lr, weight_decay=1e-6)
+# optimizer = Adam(
+#     [p for p in model.parameters() if p.requires_grad],
+#     lr=options.lr, weight_decay=1e-6)
 # optimizer = Adafactor(
 #     [p for p in model.parameters() if p.requires_grad], weight_decay=1e-6)
+optimizer = Adafactor(model.parameters(), relative_step=True, warmup_init=True)
+
 # run with lr 0.001
 if options.optimckpt is not None:
     state_dict = torch.load(options.optim, map_location='cpu')
@@ -109,6 +111,7 @@ trainer = T5TransformerTrainerNeg(model=model,
                                   scheduler=None,
                                   multitask1=options.multitask1,
                                   multitask2=options.multitask2,
+                                  margin=options.margin,
                                   checkpoint_dir=options.ckpt,
                                   device=DEVICE)
 # train model

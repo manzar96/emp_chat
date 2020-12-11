@@ -1268,6 +1268,7 @@ class T5TransformerTrainerNeg:
                  criterion,
                  multitask1=1.0,
                  multitask2=1.0,
+                 margin=1.0,
                  scheduler=None,
                  checkpoint_dir=None,
                  clip=None,
@@ -1281,7 +1282,7 @@ class T5TransformerTrainerNeg:
         self.device = device
         self.patience = patience
         self.criterion = criterion
-        self.similarity = nn.TripletMarginLoss(margin=1.0,p=2)
+        self.similarity = nn.TripletMarginLoss(margin=margin,p=2)
         self.multitask1 = multitask1
         self.multitask2 = multitask2
 
