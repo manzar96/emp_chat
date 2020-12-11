@@ -1422,8 +1422,8 @@ class T5TransformerTrainerNeg:
                 loss = lm_loss + self.multitask1*clf_loss + \
                                    self.multitask2*similarity_loss
                 avg_train_loss += loss.item()
-                avg_clf_loss += clf_loss.item()
-                avg_similarity += similarity_loss.item()
+                avg_clf_loss += self.multitask1*clf_loss.item()
+                avg_similarity += self.multitask2*similarity_loss.item()
                 avg_train_lm_loss += lm_loss.item()
                 avg_enc_acc += enc_acc
                 avg_dec_acc += dec_acc
