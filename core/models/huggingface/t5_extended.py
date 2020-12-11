@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 from transformers import T5ForConditionalGeneration
 
@@ -11,6 +12,8 @@ class T5ConditionalGenerationDoubleHead(nn.Module):
         super(T5ConditionalGenerationDoubleHead, self).__init__()
         self.num_classes = num_classes
         self.lm_model = T5ForConditionalGeneration.from_pretrained(model_version)
+        self.config = self.lm_model.config
+
         # self.clf_layer = nn.Linear(in_features=self.lm_model.config.d_model,
         #                            out_features=num_classes)
         self.clf_enc = nn.Sequential(
@@ -48,11 +51,11 @@ class T5ConditionalGenerationTripleHead(nn.Module):
     This is T5 model with 2 heads.
     An LM head + a classification head
     """
-    def __init__(self, model_version, num_classes=3, device='cpu'):
+    def __init__(self, model_version, num_classes=32, device='cpu'):
         super(T5ConditionalGenerationTripleHead, self).__init__()
         self.num_classes = num_classes
         self.lm_model = T5ForConditionalGeneration.from_pretrained(model_version)
-
+        self.config = self.lm_model.config
         self.clf_enc = nn.Sequential(
             nn.Linear(in_features=self.lm_model.config.d_model,
                       out_features=300,bias=True),
@@ -70,7 +73,7 @@ class T5ConditionalGenerationTripleHead(nn.Module):
         self.device = device
 
     def forward(self, *args, **kwargs):
-
+        batch_size = kwargs['input_ids'].shape[0]
         emo_label = kwargs['emolabel']
         kwargs.pop('emolabel', None)
         outputs = self.lm_model(**kwargs, output_hidden_states=True,
@@ -80,11 +83,19 @@ class T5ConditionalGenerationTripleHead(nn.Module):
         dec_hidden_states = outputs['decoder_hidden_states']
         enc_last_hidden = outputs['encoder_last_hidden_state']
         enc_hidden_states = outputs['encoder_hidden_states']
-        last_dec_hidden = dec_hidden_states[-1]
-        enc_last_hidden_last_timestep = enc_last_hidden[:,-1,:]
-        last_dec_hidden_last_timestep = last_dec_hidden[:,-1,:]
-        clf_logits_enc = self.clf_enc(enc_last_hidden_last_timestep)
-        clf_logits_dec = self.clf_dec(last_dec_hidden_last_timestep)
+        dec_last_hidden = dec_hidden_states[-1]
+
+        clf_logits_enc = self.clf_enc(enc_last_hidden)
+        clf_logits_dec = self.clf_dec(dec_last_hidden)
+
+        sequence_lengths_input = torch.ne(kwargs['input_ids'],
+                                          self.config.pad_token_id).sum(-1) - 1
+        sequence_lengths_targets = torch.ne(kwargs['labels'], -100).sum(-1) - 1
+
+        clf_logits_enc = clf_logits_enc[range(batch_size),
+                                       sequence_lengths_input]
+        clf_logits_dec= clf_logits_dec[range(batch_size),
+                                       sequence_lengths_targets]
         return lm_loss, lm_logits, clf_logits_enc, clf_logits_dec
 
 
@@ -127,7 +138,7 @@ class T5ConditionalGenerationEmotions(nn.Module):
         self.device = device
 
     def forward(self, *args, **kwargs):
-
+        batch_size = kwargs['input_ids'].shape[0]
         emo_label = kwargs['emolabel']
         kwargs.pop('emolabel', None)
         outputs = self.lm_model(**kwargs, output_hidden_states=True,
@@ -137,14 +148,27 @@ class T5ConditionalGenerationEmotions(nn.Module):
         dec_hidden_states = outputs['decoder_hidden_states']
         enc_last_hidden = outputs['encoder_last_hidden_state']
         enc_hidden_states = outputs['encoder_hidden_states']
-        last_dec_hidden = dec_hidden_states[-1]
-        enc_last_hidden_last_timestep = enc_last_hidden[:,-1,:]
-        last_dec_hidden_last_timestep = last_dec_hidden[:,-1,:]
-        clf_enc_emo_repr = self.clf_enc_layer1(enc_last_hidden_last_timestep)
+        dec_last_hidden = dec_hidden_states[-1]
+
+        clf_enc_emo_repr = self.clf_enc_layer1(enc_last_hidden)
         clf_enc_logits_emo = self.clf_enc_layer2(clf_enc_emo_repr)
 
-        clf_dec_emo_repr = self.clf_dec_layer1(last_dec_hidden_last_timestep)
+        clf_dec_emo_repr = self.clf_dec_layer1(dec_last_hidden)
         clf_dec_logits_emo = self.clf_dec_layer2(clf_dec_emo_repr)
+
+        sequence_lengths_input = torch.ne(kwargs['input_ids'],
+                                          self.config.pad_token_id).sum(-1) - 1
+        sequence_lengths_targets = torch.ne(kwargs['labels'], -100).sum(-1) - 1
+
+        clf_enc_emo_repr = clf_enc_emo_repr[range(batch_size),
+                                       sequence_lengths_input]
+        clf_enc_logits_emo = clf_enc_logits_emo[range(batch_size),
+                                       sequence_lengths_input]
+
+        clf_dec_emo_repr = clf_dec_emo_repr[range(batch_size),
+                                       sequence_lengths_targets]
+        clf_dec_logits_emo = clf_dec_logits_emo[range(batch_size),
+                                       sequence_lengths_targets]
         return lm_loss, lm_logits, clf_enc_logits_emo, clf_enc_emo_repr, \
                clf_dec_logits_emo, clf_dec_emo_repr
 
@@ -177,7 +201,7 @@ class T5ConditionalGenerationEmotionsShared(nn.Module):
         self.device = device
 
     def forward(self, *args, **kwargs):
-
+        batch_size = kwargs['input_ids'].shape[0]
         emo_label = kwargs['emolabel']
         kwargs.pop('emolabel', None)
         outputs = self.lm_model(**kwargs, output_hidden_states=True,
@@ -187,14 +211,28 @@ class T5ConditionalGenerationEmotionsShared(nn.Module):
         dec_hidden_states = outputs['decoder_hidden_states']
         enc_last_hidden = outputs['encoder_last_hidden_state']
         enc_hidden_states = outputs['encoder_hidden_states']
-        last_dec_hidden = dec_hidden_states[-1]
-        enc_last_hidden_last_timestep = enc_last_hidden[:,-1,:]
-        last_dec_hidden_last_timestep = last_dec_hidden[:,-1,:]
-        clf_enc_emo_repr = self.clf_layer1(enc_last_hidden_last_timestep)
+        dec_last_hidden = dec_hidden_states[-1]
+
+        clf_enc_emo_repr = self.clf_layer1(enc_last_hidden)
         clf_enc_logits_emo = self.clf_layer2(clf_enc_emo_repr)
 
-        clf_dec_emo_repr = self.clf_layer1(last_dec_hidden_last_timestep)
+        clf_dec_emo_repr = self.clf_layer1(dec_last_hidden)
         clf_dec_logits_emo = self.clf_layer2(clf_dec_emo_repr)
+
+        sequence_lengths_input = torch.ne(kwargs['input_ids'],
+                                          self.config.pad_token_id).sum(-1) - 1
+        sequence_lengths_targets = torch.ne(kwargs['labels'], -100).sum(-1) - 1
+
+        clf_enc_emo_repr = clf_enc_emo_repr[range(batch_size),
+                                       sequence_lengths_input]
+        clf_enc_logits_emo = clf_enc_logits_emo[range(batch_size),
+                                       sequence_lengths_input]
+
+        clf_dec_emo_repr = clf_dec_emo_repr[range(batch_size),
+                                       sequence_lengths_targets]
+        clf_dec_logits_emo = clf_dec_logits_emo[range(batch_size),
+                                       sequence_lengths_targets]
+
         return lm_loss, lm_logits, clf_enc_logits_emo, clf_enc_emo_repr, \
                clf_dec_logits_emo, clf_dec_emo_repr
 
@@ -238,7 +276,7 @@ class T5ConditionalGenerationEmotionsNeg(nn.Module):
         self.device = device
 
     def forward(self, *args, **kwargs):
-
+        batch_size = kwargs['input_ids'].shape[0]
         emo_label = kwargs['emolabel']
         kwargs.pop('emolabel', None)
         neg_ids = kwargs['neg_ids']
@@ -250,33 +288,53 @@ class T5ConditionalGenerationEmotionsNeg(nn.Module):
         dec_hidden_states = outputs['decoder_hidden_states']
         enc_last_hidden = outputs['encoder_last_hidden_state']
         enc_hidden_states = outputs['encoder_hidden_states']
-        last_dec_hidden = dec_hidden_states[-1]
-        enc_last_hidden_last_timestep = enc_last_hidden[:,-1,:]
-        last_dec_hidden_last_timestep = last_dec_hidden[:,-1,:]
-        clf_enc_emo_repr = self.clf_enc_layer1(enc_last_hidden_last_timestep)
+        dec_last_hidden = dec_hidden_states[-1]
+
+        clf_enc_emo_repr = self.clf_enc_layer1(enc_last_hidden)
         clf_enc_logits_emo = self.clf_enc_layer2(clf_enc_emo_repr)
 
-        clf_dec_emo_repr = self.clf_dec_layer1(last_dec_hidden_last_timestep)
+        clf_dec_emo_repr = self.clf_dec_layer1(dec_last_hidden)
         clf_dec_logits_emo = self.clf_dec_layer2(clf_dec_emo_repr)
 
+        # receive logits from last timestep according to padding
+        sequence_lengths_input = torch.ne(kwargs['input_ids'],
+                                          self.config.pad_token_id).sum(-1) - 1
+        sequence_lengths_targets = torch.ne(kwargs['labels'], -100).sum(-1) - 1
+
+        clf_enc_emo_repr = clf_enc_emo_repr[range(batch_size),
+                                       sequence_lengths_input]
+        clf_enc_logits_emo = clf_enc_logits_emo[range(batch_size),
+                                       sequence_lengths_input]
+
+        clf_dec_emo_repr = clf_dec_emo_repr[range(batch_size),
+                                       sequence_lengths_targets]
+        clf_dec_logits_emo = clf_dec_logits_emo[range(batch_size),
+                                       sequence_lengths_targets]
+        # forward the negative sample
         outputs_neg = self.lm_model(input_ids=kwargs['input_ids'],
                                  attention_mask=kwargs['attention_mask'],
                                  labels=neg_ids,
                                  output_hidden_states=True,
                                 return_dict=True)
         dec_hidden_states_neg = outputs_neg['decoder_hidden_states']
-        last_dec_hidden_neg = dec_hidden_states_neg[-1]
-        last_dec_hidden_last_timestep_neg = last_dec_hidden_neg[:,-1,:]
-        clf_dec_emo_repr_neg = self.clf_dec_layer1(
-            last_dec_hidden_last_timestep_neg)
+        dec_last_hidden_neg = dec_hidden_states_neg[-1]
+
+        clf_dec_emo_repr_neg = self.clf_dec_layer1(dec_last_hidden_neg)
         clf_dec_logits_emo_neg = self.clf_dec_layer2(clf_dec_emo_repr_neg)
+        # receive logits from last timestep according to padding
+        sequence_lengths_targets_neg = torch.ne(neg_ids, -100).sum(-1)- 1
+
+        clf_dec_emo_repr_neg = clf_dec_emo_repr_neg[range(batch_size),
+                                       sequence_lengths_targets_neg]
+        clf_dec_logits_emo_neg = clf_dec_logits_emo_neg[range(batch_size),
+                                       sequence_lengths_targets_neg]
 
         return lm_loss, lm_logits, clf_enc_logits_emo, clf_enc_emo_repr, \
                clf_dec_logits_emo, clf_dec_emo_repr, clf_dec_logits_emo_neg, \
                clf_dec_emo_repr_neg
 
     def forward_validate(self, *args, **kwargs):
-
+        batch_size = kwargs['input_ids'].shape[0]
         emo_label = kwargs['emolabel']
         kwargs.pop('emolabel', None)
 
@@ -287,14 +345,28 @@ class T5ConditionalGenerationEmotionsNeg(nn.Module):
         dec_hidden_states = outputs['decoder_hidden_states']
         enc_last_hidden = outputs['encoder_last_hidden_state']
         enc_hidden_states = outputs['encoder_hidden_states']
-        last_dec_hidden = dec_hidden_states[-1]
-        enc_last_hidden_last_timestep = enc_last_hidden[:,-1,:]
-        last_dec_hidden_last_timestep = last_dec_hidden[:,-1,:]
-        clf_enc_emo_repr = self.clf_enc_layer1(enc_last_hidden_last_timestep)
+        dec_last_hidden = dec_hidden_states[-1]
+
+        clf_enc_emo_repr = self.clf_enc_layer1(enc_last_hidden)
         clf_enc_logits_emo = self.clf_enc_layer2(clf_enc_emo_repr)
 
-        clf_dec_emo_repr = self.clf_dec_layer1(last_dec_hidden_last_timestep)
+        clf_dec_emo_repr = self.clf_dec_layer1(dec_last_hidden)
         clf_dec_logits_emo = self.clf_dec_layer2(clf_dec_emo_repr)
+
+        # receive logits from last timestep according to padding
+        sequence_lengths_input = torch.ne(kwargs['input_ids'],
+                                          self.config.pad_token_id).sum(-1) - 1
+        sequence_lengths_targets = torch.ne(kwargs['labels'], -100).sum(-1) - 1
+
+        clf_enc_emo_repr = clf_enc_emo_repr[range(batch_size),
+                                       sequence_lengths_input]
+        clf_enc_logits_emo = clf_enc_logits_emo[range(batch_size),
+                                       sequence_lengths_input]
+
+        clf_dec_emo_repr = clf_dec_emo_repr[range(batch_size),
+                                       sequence_lengths_targets]
+        clf_dec_logits_emo = clf_dec_logits_emo[range(batch_size),
+                                       sequence_lengths_targets]
 
         return lm_loss, lm_logits, clf_enc_logits_emo, clf_enc_emo_repr, \
                clf_dec_logits_emo, clf_dec_emo_repr
@@ -328,7 +400,7 @@ class T5ConditionalGenerationEmotionsSharedNeg(nn.Module):
         self.device = device
 
     def forward(self, *args, **kwargs):
-
+        batch_size = kwargs['input_ids'].shape[0]
         emo_label = kwargs['emolabel']
         kwargs.pop('emolabel', None)
         neg_ids = kwargs['neg_ids']
@@ -337,37 +409,56 @@ class T5ConditionalGenerationEmotionsSharedNeg(nn.Module):
                                 return_dict=True)
         lm_loss = outputs['loss']
         lm_logits = outputs['logits']
-        dec_hidden_states = outputs['decoder_hidden_states']
         enc_last_hidden = outputs['encoder_last_hidden_state']
         enc_hidden_states = outputs['encoder_hidden_states']
-        last_dec_hidden = dec_hidden_states[-1]
-        enc_last_hidden_last_timestep = enc_last_hidden[:,-1,:]
-        last_dec_hidden_last_timestep = last_dec_hidden[:,-1,:]
-        clf_enc_emo_repr = self.clf_layer1(enc_last_hidden_last_timestep)
+        dec_hidden_states = outputs['decoder_hidden_states']
+        dec_last_hidden = dec_hidden_states[-1]
+
+        clf_enc_emo_repr = self.clf_layer1(enc_last_hidden)
         clf_enc_logits_emo = self.clf_layer2(clf_enc_emo_repr)
 
-        clf_dec_emo_repr = self.clf_layer1(last_dec_hidden_last_timestep)
+        clf_dec_emo_repr = self.clf_layer1(dec_last_hidden)
         clf_dec_logits_emo = self.clf_layer2(clf_dec_emo_repr)
 
+        # receive logits from last timestep according to padding
+        sequence_lengths_input = torch.ne(kwargs['input_ids'],
+                                          self.config.pad_token_id).sum(-1) - 1
+        sequence_lengths_targets = torch.ne(kwargs['labels'], -100).sum(-1) - 1
+
+        clf_enc_emo_repr = clf_enc_emo_repr[range(batch_size),
+                                       sequence_lengths_input]
+        clf_enc_logits_emo = clf_enc_logits_emo[range(batch_size),
+                                       sequence_lengths_input]
+
+        clf_dec_emo_repr = clf_dec_emo_repr[range(batch_size),
+                                       sequence_lengths_targets]
+        clf_dec_logits_emo = clf_dec_logits_emo[range(batch_size),
+                                       sequence_lengths_targets]
+
+        # forward the negative sample
         outputs_neg = self.lm_model(input_ids=kwargs['input_ids'],
                                  attention_mask=kwargs['attention_mask'],
                                  labels=neg_ids,
                                  output_hidden_states=True,
                                 return_dict=True)
+
         dec_hidden_states_neg = outputs_neg['decoder_hidden_states']
-        last_dec_hidden_neg = dec_hidden_states_neg[-1]
-        last_dec_hidden_last_timestep_neg = last_dec_hidden_neg[:,-1,:]
-        clf_dec_emo_repr_neg = self.clf_layer1(
-            last_dec_hidden_last_timestep_neg)
+        dec_last_hidden_neg = dec_hidden_states_neg[-1]
+        clf_dec_emo_repr_neg = self.clf_layer1(dec_last_hidden_neg)
         clf_dec_logits_emo_neg = self.clf_layer2(clf_dec_emo_repr_neg)
 
-
+        # receive logits from last timestep according to padding
+        sequence_lengths_targets_neg = torch.ne(neg_ids, -100).sum(-1)- 1
+        clf_dec_emo_repr_neg = clf_dec_emo_repr_neg[range(batch_size),
+                                       sequence_lengths_targets_neg]
+        clf_dec_logits_emo_neg = clf_dec_logits_emo_neg[range(batch_size),
+                                       sequence_lengths_targets_neg]
         return lm_loss, lm_logits, clf_enc_logits_emo, clf_enc_emo_repr, \
                clf_dec_logits_emo, clf_dec_emo_repr, clf_dec_logits_emo_neg, \
                clf_dec_emo_repr_neg
 
     def forward_validate(self, *args, **kwargs):
-
+        batch_size = kwargs['input_ids'].shape[0]
         emo_label = kwargs['emolabel']
         kwargs.pop('emolabel', None)
 
@@ -378,14 +469,28 @@ class T5ConditionalGenerationEmotionsSharedNeg(nn.Module):
         dec_hidden_states = outputs['decoder_hidden_states']
         enc_last_hidden = outputs['encoder_last_hidden_state']
         enc_hidden_states = outputs['encoder_hidden_states']
-        last_dec_hidden = dec_hidden_states[-1]
-        enc_last_hidden_last_timestep = enc_last_hidden[:,-1,:]
-        last_dec_hidden_last_timestep = last_dec_hidden[:,-1,:]
-        clf_enc_emo_repr = self.clf_layer1(enc_last_hidden_last_timestep)
+        dec_last_hidden = dec_hidden_states[-1]
+
+        clf_enc_emo_repr = self.clf_layer1(enc_last_hidden)
         clf_enc_logits_emo = self.clf_layer2(clf_enc_emo_repr)
 
-        clf_dec_emo_repr = self.clf_layer1(last_dec_hidden_last_timestep)
+        clf_dec_emo_repr = self.clf_layer1(dec_last_hidden)
         clf_dec_logits_emo = self.clf_layer2(clf_dec_emo_repr)
+
+        # receive logits from last timestep according to padding
+        sequence_lengths_input = torch.ne(kwargs['input_ids'],
+                                          self.config.pad_token_id).sum(-1) - 1
+        sequence_lengths_targets = torch.ne(kwargs['labels'], -100).sum(-1) - 1
+
+        clf_enc_emo_repr = clf_enc_emo_repr[range(batch_size),
+                                       sequence_lengths_input]
+        clf_enc_logits_emo = clf_enc_logits_emo[range(batch_size),
+                                       sequence_lengths_input]
+
+        clf_dec_emo_repr = clf_dec_emo_repr[range(batch_size),
+                                       sequence_lengths_targets]
+        clf_dec_logits_emo = clf_dec_logits_emo[range(batch_size),
+                                       sequence_lengths_targets]
 
         return lm_loss, lm_logits, clf_enc_logits_emo, clf_enc_emo_repr, \
                clf_dec_logits_emo, clf_dec_emo_repr
