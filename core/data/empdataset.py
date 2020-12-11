@@ -16,6 +16,7 @@ class EmpatheticDataset(Dataset):
 
         self.data, self.ids = self.read_data()
         self.label2idx, self.idx2label = self.get_labels_dict()
+        self.change_labels()
         self.transforms = []
         # we use different tokenizers for context and answers in case its
         # needed!
@@ -62,6 +63,26 @@ class EmpatheticDataset(Dataset):
                 idx2label[counter] = label
                 counter += 1
         return label2idx, idx2label
+
+    def change_labels(self):
+        positive = ['surprised', 'excited', 'proud', 'grateful', 'impressed',
+                    'hopeful',
+                    'confident', 'joyful', 'content', 'caring', 'trusting',
+                    'faithful',
+                    'prepared', 'sentimental', 'anticipating']
+        negative = ['angry', 'sad', 'annoyed', 'lonely', 'afraid', 'terrified',
+                    'guilty',
+                    'disgusted', 'furious', 'anxious', 'nostalgic',
+                    'disappointed',
+                    'jealous', 'devastated', 'embarrassed', 'ashamed',
+                    'apprehensive']
+        for key in self.label2idx.keys():
+            if key in positive:
+                self.label2idx[key] = 1
+            elif key in negative:
+                self.label2idx[key] = 0
+            else:
+                raise ValueError
 
     def bert_transform_data(self, tokenize):
         alldata = []

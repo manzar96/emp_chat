@@ -1191,6 +1191,7 @@ class T5TransformerTrainerSimilarity:
         lm_logits = outputs[1]
         clf_logits_enc = outputs[2]
         enc_emo_repr = outputs[3]
+        clf_logits_dec = outputs[4]
         dec_emo_repr = outputs[5]
         # similarity_loss = torch.mean(self.similarity(enc_emo_repr,
         #                                              dec_emo_repr))
