@@ -10,7 +10,7 @@ from transformers import T5Tokenizer, T5ForConditionalGeneration
 from core.utils.parser import get_train_parser
 from core.data.empdataset import EmpatheticDataset
 from core.data.persona import PersonaChatDataset
-from core.data.collators import T5CollatorEmpChatMultitask, T5CollatorPersChat
+from core.data.collators import T5CollatorEmpChatEmo, T5CollatorPersChat
 from core.models.huggingface.t5_extended import \
     T5ConditionalGenerationTripleHead
 from core.utils.transforms import ToTensor
@@ -58,7 +58,7 @@ val_dataset.tokenizer_ans = tokenizer
 
 # load data
 if options.dataset_name == "empchat":
-    collator_fn = T5CollatorEmpChatMultitask(device='cpu')
+    collator_fn = T5CollatorEmpChatEmo(device='cpu')
 elif "persona":
     collator_fn = T5CollatorPersChat(device='cpu')
 train_loader = DataLoader(train_dataset, batch_size=options.batch_size,
