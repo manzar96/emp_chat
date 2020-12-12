@@ -145,7 +145,7 @@ test_loader = DataLoader(test_dataset, batch_size=options.batch_size,
 
 lm_model = T5ForConditionalGeneration.from_pretrained('t5-base')
 model = T5ConditionalGenerationEmotionsShared(lm_model=lm_model,
-                                        num_classes=32,
+                                        num_classes=2,
                                         device=DEVICE)
 
 # load model from checkpoint
@@ -160,7 +160,7 @@ import ipdb;ipdb.set_trace()
 _generate(options, model, test_loader, tokenizer, DEVICE)
 
 # calc and print metrics
-# calc_test_ppl(model, test_loader, DEVICE)
+calc_test_ppl(model, test_loader, DEVICE)
 calc_metrics(options, tokenizer)
 
 #calc_similarity_trans(options)
