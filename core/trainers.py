@@ -1349,6 +1349,8 @@ class T5TransformerTrainerNeg:
         with torch.no_grad():
             avg_val_loss = 0
             avg_val_lm_loss = 0
+            avg_enc_acc = 0
+            avg_dec_acc = 0
 
             for index, batch in enumerate(tqdm(val_loader)):
                 inputs = to_device(batch[0], device=self.device)
@@ -1364,25 +1366,28 @@ class T5TransformerTrainerNeg:
                                      labels=repl_targets)
                 lm_loss = outputs[0]
                 lm_logits = outputs[1]
-                clf_logits = outputs[2]
+                clf_logits_enc = outputs[2]
                 enc_emo_repr = outputs[3]
+                clf_logits_dec = outputs[4]
                 dec_emo_repr = outputs[5]
-                # similarity_loss = torch.mean(self.similarity(enc_emo_repr,
-                #                                         dec_emo_repr))
-                similarity_loss = self.similarity(enc_emo_repr,
-                                                  dec_emo_repr,
-                                                  torch.tensor(1, device=self.device))
-                clf_loss = self.criterion(clf_logits, emo_label)
 
-                # avg_val_loss = avg_val_loss + lm_loss + clf_loss-similarity_loss
-                avg_val_loss = avg_val_loss + lm_loss + clf_loss+similarity_loss
+                enc_emo = F.softmax(clf_logits_enc, dim=1)
+                enc_emo = torch.argmax(enc_emo, dim=1)
+                dec_emo = F.softmax(clf_logits_dec, dim=1)
+                dec_emo = torch.argmax(dec_emo, dim=1)
+
+                enc_acc = sum(enc_emo == emo_label).item() / inputs.shape[0]
+                dec_acc = sum(enc_emo == dec_emo).item() / inputs.shape[0]
                 avg_val_lm_loss = avg_val_lm_loss + lm_loss
+                avg_enc_acc += enc_acc
+                avg_dec_acc += dec_acc
 
-
-            avg_val_loss = avg_val_loss / len(val_loader)
             avg_val_lm_loss = avg_val_lm_loss / len(val_loader)
-            print("avg val loss {} ,   avg val lm_loss {}".format(
-                avg_val_loss, avg_val_lm_loss))
+            avg_enc_acc = avg_enc_acc / len(val_loader)
+            avg_dec_acc = avg_dec_acc / len(val_loader)
+            print("avg val lm_loss {}".format(avg_val_lm_loss))
+            print("avg val enc acc {}".format(avg_enc_acc))
+            print("avg val dec acc {}".format(avg_dec_acc))
             return avg_val_lm_loss
 
 
