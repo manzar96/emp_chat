@@ -6,7 +6,7 @@ from tqdm import tqdm
 from torch.nn.functional import cosine_similarity
 from torch.utils.data import DataLoader
 from transformers import T5Tokenizer, T5ForConditionalGeneration
-from sentence_transformers import SentenceTransformer
+# from sentence_transformers import SentenceTransformer
 
 
 from core.utils.parser import get_test_parser
@@ -19,29 +19,29 @@ from core.metrics.metrics import calc_sentence_bleu_score, \
     calc_word_error_rate
 
 
-def calc_similarity_trans(options):
-
-    all_sentences = []
-    outfile = open(os.path.join(options.outfolder, "gen_outs.txt"), "r")
-    lines = outfile.readlines()
-    for line in lines:
-        inp, out, trgt = line[:-1].split("\t\t")
-        all_sentences.append(inp)
-        all_sentences.append(out)
-        all_sentences.append(trgt)
-
-    model = SentenceTransformer('bert-base-nli-stsb-mean-tokens')
-    sentence_embeddings = model.encode(all_sentences)
-    mydict = dict(zip(all_sentences, sentence_embeddings))
-
-    cos_sim=[]
-    for line in lines:
-        inp, out, trgt = line[:-1].split("\t\t")
-        tensor1 = torch.tensor(mydict[out]).unsqueeze(0)
-        tensor2 = torch.tensor(mydict[trgt]).unsqueeze(0)
-        cos_sim.append(cosine_similarity(tensor1, tensor2))
-
-    print("Cosine Similairity: {}".format(np.mean(cos_sim)))
+# def calc_similarity_trans(options):
+#
+#     all_sentences = []
+#     outfile = open(os.path.join(options.outfolder, "gen_outs.txt"), "r")
+#     lines = outfile.readlines()
+#     for line in lines:
+#         inp, out, trgt = line[:-1].split("\t\t")
+#         all_sentences.append(inp)
+#         all_sentences.append(out)
+#         all_sentences.append(trgt)
+#
+#     model = SentenceTransformer('bert-base-nli-stsb-mean-tokens')
+#     sentence_embeddings = model.encode(all_sentences)
+#     mydict = dict(zip(all_sentences, sentence_embeddings))
+#
+#     cos_sim=[]
+#     for line in lines:
+#         inp, out, trgt = line[:-1].split("\t\t")
+#         tensor1 = torch.tensor(mydict[out]).unsqueeze(0)
+#         tensor2 = torch.tensor(mydict[trgt]).unsqueeze(0)
+#         cos_sim.append(cosine_similarity(tensor1, tensor2))
+#
+#     print("Cosine Similairity: {}".format(np.mean(cos_sim)))
 
 
 def calc_test_ppl(model, loader, device):
@@ -115,11 +115,12 @@ def _generate(options, model, loader, tokenizer, device):
                        top_p=options.topp,
                        num_return_sequences=options.Nbest,
                        )
-        inp_list = ["".join(tokenizer.decode(inputs[i])) for i in range(
+        inp_list = ["".join(tokenizer.decode(inputs[i],
+                                             skip_special_tokens=True)) for i in range(
             inputs.shape[0])]
-        out_list = ["".join(tokenizer.decode(outputs[i])) for i in range(
+        out_list = ["".join(tokenizer.decode(outputs[i],skip_special_tokens=True)) for i in range(
             inputs.shape[0])]
-        tgt_list = ["".join(tokenizer.decode(pad_targets[i])) for i in range(
+        tgt_list = ["".join(tokenizer.decode(pad_targets[i],skip_special_tokens=True)) for i in range(
             inputs.shape[0])]
         for i in range(len(inp_list)):
             outfile.write(inp_list[i]+"\t\t"+out_list[i]+"\t\t"+tgt_list[
@@ -162,7 +163,7 @@ test_dataset.tokenizer_ans = tokenizer
 # load test data
 collator_fn = T5CollatorEmpChat(device='cpu')
 test_loader = DataLoader(test_dataset, batch_size=options.batch_size,
-                         drop_last=False, shuffle=True, collate_fn=collator_fn)
+                         drop_last=False, collate_fn=collator_fn)
 
 
 # load model from checkpoint

@@ -142,7 +142,7 @@ test_dataset.tokenizer_ans = tokenizer
 # load test data
 collator_fn = T5CollatorEmpChatEmo(device='cpu')
 test_loader = DataLoader(test_dataset, batch_size=options.batch_size,
-                         drop_last=False, shuffle=True, collate_fn=collator_fn)
+                         drop_last=False, collate_fn=collator_fn)
 
 lm_model = T5ForConditionalGeneration.from_pretrained('t5-base')
 model = T5ConditionalGenerationEmotionsShared(lm_model=lm_model,
@@ -158,11 +158,11 @@ model.config.dropout_rate = 0
 
 import ipdb;ipdb.set_trace()
 # generate answers model
-_generate(options, model, test_loader, tokenizer, test_dataset.idx2label,
-          DEVICE)
+# _generate(options, model, test_loader, tokenizer, test_dataset.idx2label,
+#           DEVICE)
 
 # calc and print metrics
-# calc_test_ppl(model, test_loader, DEVICE)
+calc_test_ppl(model, test_loader, DEVICE)
 # calc_metrics(options, tokenizer)
 
 #calc_similarity_trans(options)
