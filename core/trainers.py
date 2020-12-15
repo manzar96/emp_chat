@@ -1535,7 +1535,7 @@ class BlenderBotTrainer:
 
                 outputs = self.model(input_ids=inputs,
                                      attention_mask=inputs_att,
-                                     labels=pad_targets, return_dict=True)
+                                     labels=repl_targets, return_dict=True)
 
                 lm_loss = outputs['loss']
                 lm_logits = outputs['logits']
@@ -1579,7 +1579,6 @@ class BlenderBotTrainer:
         targets_att = to_device(batch[4], device=self.device)
         outputs = self.model(input_ids=inputs, attention_mask=inputs_att,
                              labels=repl_targets, return_dict=True)
-
         lm_loss = outputs['loss']
         lm_logits = outputs['logits']
         last_hidden = outputs['decoder_hidden_states'][1]
