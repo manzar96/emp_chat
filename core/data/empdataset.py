@@ -79,8 +79,10 @@ class EmpatheticDataset(Dataset):
         for key in self.label2idx.keys():
             if key in positive:
                 self.label2idx[key] = 1
+                self.idx2label[1] = key
             elif key in negative:
                 self.label2idx[key] = 0
+                self.idx2label[0] = key
             else:
                 raise ValueError
 

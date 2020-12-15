@@ -74,7 +74,7 @@ def calc_metrics(options,tokenizer):
     #print("Word Error Rate: {}".format(np.mean(word_error_rate)))
 
 
-def _generate(options, model, loader, tokenizer, device):
+def _generate(options, model, loader, tokenizer, idx2emo, device):
 
     if not os.path.exists(options.outfolder):
         os.makedirs(options.outfolder)
@@ -83,7 +83,7 @@ def _generate(options, model, loader, tokenizer, device):
         inputs = to_device(batch[0], device=device)
         inputs_att = to_device(batch[1], device=device)
         pad_targets = to_device(batch[2], device=device)
-
+        emo_labels = to_device(batch[5], device=device)
         outputs = model.lm_model.generate(input_ids=inputs,
                        attention_mask=inputs_att,
                        max_length=40,
@@ -107,9 +107,10 @@ def _generate(options, model, loader, tokenizer, device):
                                              skip_special_tokens=True)) for i
                     in range(
             inputs.shape[0])]
+        emo_labels = [idx2emo[item] for item in emo_labels]
         for i in range(len(inp_list)):
             outfile.write(inp_list[i]+"\t\t"+out_list[i]+"\t\t"+tgt_list[
-                i]+"\n")
+                i]+"\t\t"+emo_labels[i]+"\n")
 
     outfile.close()
 
@@ -157,7 +158,8 @@ model.config.dropout_rate = 0
 
 import ipdb;ipdb.set_trace()
 # generate answers model
-_generate(options, model, test_loader, tokenizer, DEVICE)
+_generate(options, model, test_loader, tokenizer, test_dataset.idx2label,
+          DEVICE)
 
 # calc and print metrics
 calc_test_ppl(model, test_loader, DEVICE)
