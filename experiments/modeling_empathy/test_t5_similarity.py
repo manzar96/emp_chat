@@ -107,7 +107,7 @@ def _generate(options, model, loader, tokenizer, idx2emo, device):
                                              skip_special_tokens=True)) for i
                     in range(
             inputs.shape[0])]
-        emo_labels = [idx2emo[item] for item in emo_labels]
+        emo_labels = [idx2emo[item.item()] for item in emo_labels]
         for i in range(len(inp_list)):
             outfile.write(inp_list[i]+"\t\t"+out_list[i]+"\t\t"+tgt_list[
                 i]+"\t\t"+emo_labels[i]+"\n")
