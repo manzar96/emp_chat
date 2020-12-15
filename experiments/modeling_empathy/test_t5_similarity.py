@@ -56,7 +56,7 @@ def calc_metrics(options,tokenizer):
     bleu4 = []
     word_error_rate = []
     for line in lines:
-        inp, out, trgt = line[:-1].split("\t\t")
+        inp, out, trgt, emo_label = line[:-1].split("\t\t")
         inp = tokenizer.encode(inp)
         out = tokenizer.encode(out)
         trgt = tokenizer.encode(trgt)
