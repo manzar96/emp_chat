@@ -298,6 +298,9 @@ class T5CollatorEmpChatEmoNegSampling(object):
         list_neg = [replaced_neg[i,sample_indexes[i],:] for i in range(
             batch_size)]
         replaced_neg = torch.stack(list_neg)
+        list_neg_pad_mask = [neg_pad_mask[i,sample_indexes[i],:] for i in
+                             range(batch_size)]
+        neg_pad_mask = torch.stack(list_neg_pad_mask)
         return padded_inputs, inputs_pad_mask, padded_targets,replaced_targ, \
                targets_pad_mask,emo_labels,replaced_neg,neg_pad_mask
 

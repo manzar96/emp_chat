@@ -17,7 +17,7 @@ class EmpatheticDataset(Dataset):
         self.data, self.ids = self.read_data()
         self.label2idx, self.idx2label = self.get_labels_dict()
 
-        # self.change_labels()
+        self.change_labels()
         self.transforms = []
         # we use different tokenizers for context and answers in case its
         # needed!
@@ -161,8 +161,6 @@ class PreEmpatheticDatasetNeg(Dataset):
         self.label2idx, self.idx2label = self.get_labels_dict()
         self.transforms = []
 
-
-
     def read_data(self):
         data = []
         ids = []
@@ -214,8 +212,6 @@ class PreEmpatheticDatasetNeg(Dataset):
         return self.ids[index]
 
 
-
-
 class EmpatheticDatasetNeg(Dataset):
 
     def __init__(self, splitname, maxhistorylen, tokenizer_hist=None,
@@ -226,20 +222,18 @@ class EmpatheticDatasetNeg(Dataset):
 
         self.data = self.read_data()
         self.label2idx, self.idx2label = self.get_labels_dict()
+        self.change_labels()
         self.transforms = []
         # we use different tokenizers for context and answers in case its
         # needed!
         self.tokenizer_hist = tokenizer_hist
         self.tokenizer_ans = tokenizer_ans
 
-
-
     def read_data(self):
         dataset = pickle.load(open(
             './data/empatheticdialogues/train_neg_dataset.pkl',
                                  'rb'))
         return dataset
-
 
     def get_labels_dict(self):
         label2idx = {}
@@ -252,6 +246,29 @@ class EmpatheticDatasetNeg(Dataset):
                 idx2label[counter] = label
                 counter += 1
         return label2idx, idx2label
+
+    def change_labels(self):
+        positive = ['surprised', 'excited', 'proud', 'grateful', 'impressed',
+                    'hopeful',
+                    'confident', 'joyful', 'content', 'caring', 'trusting',
+                    'faithful',
+                    'prepared', 'sentimental', 'anticipating']
+        negative = ['angry', 'sad', 'annoyed', 'lonely', 'afraid', 'terrified',
+                    'guilty',
+                    'disgusted', 'furious', 'anxious', 'nostalgic',
+                    'disappointed',
+                    'jealous', 'devastated', 'embarrassed', 'ashamed',
+                    'apprehensive']
+        for key in self.label2idx.keys():
+            if key in positive:
+                self.label2idx[key] = 1
+                self.idx2label[1] = key
+            elif key in negative:
+                self.label2idx[key] = 0
+                self.idx2label[0] = key
+            else:
+                raise ValueError
+
 
     def __len__(self):
         return len(self.data)

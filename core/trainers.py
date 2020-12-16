@@ -1409,7 +1409,6 @@ class T5TransformerTrainerNeg:
                              input_ids=inputs,
                              attention_mask=inputs_att,
                              labels=repl_targets)
-
         lm_loss = outputs[0]
         lm_logits = outputs[1]
         clf_logits_enc = outputs[2]
