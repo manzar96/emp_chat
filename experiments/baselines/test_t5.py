@@ -145,7 +145,7 @@ else:
     raise NotImplementedError
 
 # make transforms
-tokenizer = T5Tokenizer.from_pretrained('t5-small')
+tokenizer = T5Tokenizer.from_pretrained('t5-base')
 # tokenize = lambda x: tokenizer.tokenize(x)
 # to_tokens_ids = lambda x: tokenizer.convert_tokens_to_ids(x)
 # to_tensor = ToTensor()
