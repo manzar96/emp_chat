@@ -86,6 +86,9 @@ def _generate(options, model, loader, tokenizer, idx2emo, device):
         emo_labels = to_device(batch[5], device=device)
         outputs = model.lm_model.generate(input_ids=inputs,
                        attention_mask=inputs_att,
+                       min_length=4,
+                       repetition_penalty=0.2,
+                                          no_repeat_ngram_size=3,
                        max_length=40,
                        length_penalty=0.6,
                        do_sample=options.sampling,
