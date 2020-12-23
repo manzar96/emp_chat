@@ -213,25 +213,35 @@ class T5ConditionalGenerationEmotionsShared(nn.Module):
         enc_hidden_states = outputs['encoder_hidden_states']
         dec_last_hidden = dec_hidden_states[-1]
 
+        sequence_lengths_input = torch.ne(kwargs['input_ids'],
+                                          self.config.pad_token_id).sum(-1) - 1
+        sequence_lengths_targets = torch.ne(kwargs['labels'], -100).sum(-1) - 1
+
+        enc_last_hidden = enc_last_hidden[range(batch_size),
+                                       sequence_lengths_input]
+
+        dec_last_hidden = dec_last_hidden[range(batch_size),
+                                       sequence_lengths_targets]
+
         clf_enc_emo_repr = self.clf_layer1(enc_last_hidden)
         clf_enc_logits_emo = self.clf_layer2(clf_enc_emo_repr)
 
         clf_dec_emo_repr = self.clf_layer1(dec_last_hidden)
         clf_dec_logits_emo = self.clf_layer2(clf_dec_emo_repr)
 
-        sequence_lengths_input = torch.ne(kwargs['input_ids'],
-                                          self.config.pad_token_id).sum(-1) - 1
-        sequence_lengths_targets = torch.ne(kwargs['labels'], -100).sum(-1) - 1
+        # sequence_lengths_input = torch.ne(kwargs['input_ids'],
+        #                                   self.config.pad_token_id).sum(-1) - 1
+        # sequence_lengths_targets = torch.ne(kwargs['labels'], -100).sum(-1) - 1
 
-        clf_enc_emo_repr = clf_enc_emo_repr[range(batch_size),
-                                       sequence_lengths_input]
-        clf_enc_logits_emo = clf_enc_logits_emo[range(batch_size),
-                                       sequence_lengths_input]
-
-        clf_dec_emo_repr = clf_dec_emo_repr[range(batch_size),
-                                       sequence_lengths_targets]
-        clf_dec_logits_emo = clf_dec_logits_emo[range(batch_size),
-                                       sequence_lengths_targets]
+        # clf_enc_emo_repr = clf_enc_emo_repr[range(batch_size),
+        #                                sequence_lengths_input]
+        # clf_enc_logits_emo = clf_enc_logits_emo[range(batch_size),
+        #                                sequence_lengths_input]
+        #
+        # clf_dec_emo_repr = clf_dec_emo_repr[range(batch_size),
+        #                                sequence_lengths_targets]
+        # clf_dec_logits_emo = clf_dec_logits_emo[range(batch_size),
+        #                                sequence_lengths_targets]
 
         return lm_loss, lm_logits, clf_enc_logits_emo, clf_enc_emo_repr, \
                clf_dec_logits_emo, clf_dec_emo_repr
