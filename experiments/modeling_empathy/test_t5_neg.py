@@ -150,8 +150,8 @@ model = T5ConditionalGenerationEmotionsSharedNeg(lm_model=lm_model,
                                         device=DEVICE)
 
 # load model from checkpoint
-# state_dict = torch.load(options.modelckpt, map_location='cpu')
-# model.load_state_dict(state_dict)
+state_dict = torch.load(options.modelckpt, map_location='cpu')
+model.load_state_dict(state_dict)
 model.to(DEVICE)
 #we set dropout to zero for testing!
 model.config.dropout_rate = 0
