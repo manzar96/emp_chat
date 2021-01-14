@@ -1,5 +1,5 @@
 import random
-import pickle
+import pickle5 as pickle
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from core.data.empdataset import PreEmpatheticDatasetNeg
