@@ -38,6 +38,7 @@ for index,sample in enumerate(train_dataset):
 
 dict_pos_final = {}
 for key in dict_pos.keys():
+    print(key)
     emb1 = dict_pos_emb[key].reshape(1,-1)
     emb2 = [dict_pos_emb[key1].reshape(1,-1) for key1 in dict_pos.keys()]
     pos_similarities = [cosine_similarity(emb1, emb2[i])[0][0] for i in
