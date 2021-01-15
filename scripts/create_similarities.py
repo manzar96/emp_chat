@@ -57,6 +57,9 @@ for key in dict_pos.keys():
     sample = dict_pos[key]
     dict_pos_final[key] = [sample,pos_samples,neg_samples]
 
+with open('./data/dict_pos.pickle', 'wb') as handle:
+    pickle.dump(dict_pos_final, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
 dict_neg_final = {}
 for key in dict_neg.keys():
     emb1 = dict_neg_emb[key].reshape(1,-1)
@@ -82,5 +85,3 @@ for key in dict_neg.keys():
 with open('./data/dict_neg.pickle', 'wb') as handle:
     pickle.dump(dict_neg_final, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-with open('./data/dict_pos.pickle', 'wb') as handle:
-    pickle.dump(dict_pos_final, handle, protocol=pickle.HIGHEST_PROTOCOL)
