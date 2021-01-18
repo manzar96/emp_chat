@@ -126,36 +126,36 @@ dict_pos_final = {}
 
 
 neg_emb = [dict_neg_emb[key1] for key1 in dict_neg.keys()]
-neg_similarities = cosine_similarity(neg_emb, neg_emb)
-sort_ind_neg = np.argsort(neg_similarities, axis=1)
-new_neg_samples = np.array(list(dict_neg.values()))
+# neg_similarities = cosine_similarity(neg_emb, neg_emb)
+# sort_ind_neg = np.argsort(neg_similarities, axis=1)
+# new_neg_samples = np.array(list(dict_neg.values()))
+# final_neg = []
+
+pos_emb = [dict_pos_emb[key1] for key1 in dict_pos.keys()]
+pos_similarities = cosine_similarity(neg_emb, pos_emb)
+sort_ind_pos = np.argsort(pos_similarities, axis=1)
+new_pos_samples = np.array(list(dict_pos.values()))
 final_neg = []
-
-# pos_emb = [dict_pos_emb[key1] for key1 in dict_pos.keys()]
-# pos_similarities = cosine_similarity(neg_emb, pos_emb)
-# sort_ind_pos = np.argsort(pos_similarities, axis=1)
-# new_pos_samples = np.array(list(dict_pos.values()))
-
 
 
 
 for index,key in enumerate(dict_neg.keys()):
     sample=dict_neg[key]
-    sorted_ind_neg = sort_ind_neg[index]
-    similarities = neg_similarities[index][sorted_ind_neg]
-    sorted_neg_samples = new_neg_samples[sorted_ind_neg]
-    #from the sorted_pos_samples we take the 2nd from the end! (and only
-    # the replie)
-    sim1 = similarities[-2]
-    neg_reply = sorted_neg_samples[-2][1]
+    # sorted_ind_neg = sort_ind_neg[index]
+    # similarities = neg_similarities[index][sorted_ind_neg]
+    # sorted_neg_samples = new_neg_samples[sorted_ind_neg]
+    # #from the sorted_pos_samples we take the 2nd from the end! (and only
+    # # the replie)
+    # sim1 = similarities[-2]
+    # neg_reply = sorted_neg_samples[-2][1]
 
-    # sorted_ind_pos = sort_ind_pos[index]
-    # similarities_pos = pos_similarities[index][sorted_ind_pos]
-    # sorted_pos_samples = new_pos_samples[sorted_ind_pos]
-    # sim2 = similarities_pos[-1]
-    # pos_reply = sorted_pos_samples[-2][1]
+    sorted_ind_pos = sort_ind_pos[index]
+    similarities_pos = pos_similarities[index][sorted_ind_pos]
+    sorted_pos_samples = new_pos_samples[sorted_ind_pos]
+    sim2 = similarities_pos[-1]
+    pos_reply = sorted_pos_samples[-2][1]
     # final_neg.append([sample,[neg_reply,sim1],[[pos_reply,sim2]]])
-    final_neg.append([sample,[neg_reply,sim1]])
+    final_neg.append([sample,[pos_reply,sim2]])
 
-with open('./data/final_neg_neg.pickle', 'wb') as handle:
+with open('./data/final_neg_pos.pickle', 'wb') as handle:
     pickle.dump(final_neg, handle, protocol=pickle.HIGHEST_PROTOCOL)
