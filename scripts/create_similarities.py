@@ -140,7 +140,6 @@ final_neg = []
 
 
 for index,key in enumerate(dict_neg.keys()):
-    print(key)
     sample=dict_neg[key]
     sorted_ind_neg = sort_ind_neg[index]
     similarities = neg_similarities[index][sorted_ind_neg]
