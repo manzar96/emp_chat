@@ -157,5 +157,5 @@ for index,key in enumerate(dict_neg.keys()):
     # final_neg.append([sample,[neg_reply,sim1],[[pos_reply,sim2]]])
     final_neg.append([sample,[neg_reply,sim1]])
 
-with open('./data/final_neg.pickle', 'wb') as handle:
+with open('./data/final_neg_neg.pickle', 'wb') as handle:
     pickle.dump(final_neg, handle, protocol=pickle.HIGHEST_PROTOCOL)
