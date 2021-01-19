@@ -504,3 +504,135 @@ class T5ConditionalGenerationEmotionsSharedNeg(nn.Module):
 
         return lm_loss, lm_logits, clf_enc_logits_emo, clf_enc_emo_repr, \
                clf_dec_logits_emo, clf_dec_emo_repr
+
+
+
+class T5ConditionalGenerationEmotionsSharedPosNeg(nn.Module):
+    """
+    This is T5 model for conditional generation extended with an encoder and a
+    decoder
+    clf head for classifying
+    emotions.
+
+    """
+    def __init__(self, lm_model, num_classes=32, drop=0.2, device='cpu'):
+        super(T5ConditionalGenerationEmotionsSharedPosNeg, self).__init__()
+        self.num_classes = num_classes
+        self.config = lm_model.config
+        self.lm_model = lm_model
+        self.dropout = drop
+        self.clf_layer1 = nn.Sequential(
+            nn.Linear(in_features=self.lm_model.config.d_model,
+                      out_features=300,bias=True),
+            nn.Dropout(self.dropout),
+            nn.GELU())
+        self.clf_layer2 = nn.Sequential(
+            nn.Linear(in_features=300,
+                      out_features=self.num_classes),
+            nn.Dropout(self.dropout),
+            nn.Sigmoid())
+
+        self.device = device
+
+    def forward(self, *args, **kwargs):
+        batch_size = kwargs['input_ids'].shape[0]
+        emo_label = kwargs['emolabel']
+        kwargs.pop('emolabel', None)
+        same_ids = kwargs['input_ids2']
+        kwargs.pop('input_ids2', None)
+        wrong_ids = kwargs['input_ids3']
+        kwargs.pop('input_ids3', None)
+        target_ids = kwargs['labels']
+        outputs_anchor = self.lm_model(**kwargs, output_hidden_states=True,
+                                return_dict=True)
+        lm_loss = outputs_anchor['loss']
+        lm_logits = outputs_anchor['logits']
+        enc_last_hidden = outputs_anchor['encoder_last_hidden_state']
+        enc_hidden_states = outputs_anchor['encoder_hidden_states']
+        dec_hidden_states = outputs_anchor['decoder_hidden_states']
+        dec_last_hidden = dec_hidden_states[-1]
+
+        # receive logits from last timestep according to padding
+        sequence_lengths_targets = torch.ne(target_ids, -100).sum(-1)-1
+        anchor_dec_hidden = dec_last_hidden[range(batch_size),
+                                       sequence_lengths_targets]
+
+        clf_enc_emo_repr = self.clf_layer1(enc_last_hidden)
+        clf_enc_logits_emo = self.clf_layer2(clf_enc_emo_repr)
+
+        # receive logits from last timestep according to padding
+        sequence_lengths_input = torch.ne(kwargs['input_ids'],
+                                          self.config.pad_token_id).sum(-1) - 1
+        sequence_lengths_targets = torch.ne(kwargs['labels'], -100).sum(-1) - 1
+
+        clf_enc_logits_emo = clf_enc_logits_emo[range(batch_size),
+                                       sequence_lengths_input]
+
+
+        # forward the same sample
+        outputs_same = self.lm_model(input_ids=kwargs['input_ids'],
+                                 attention_mask=kwargs['attention_mask'],
+                                 labels=same_ids,
+                                 output_hidden_states=True,
+                                return_dict=True)
+
+        dec_hidden_states_same = outputs_same['decoder_hidden_states']
+        dec_last_hidden_same = dec_hidden_states_same[-1]
+
+
+        # receive logits from last timestep according to padding
+        sequence_lengths_targets_same = torch.ne(same_ids, -100).sum(-1)-1
+        same_dec_hidden = dec_last_hidden_same[range(batch_size),
+                                       sequence_lengths_targets_same]
+
+
+        # forward the wrong sample
+        outputs_wrong = self.lm_model(input_ids=kwargs['input_ids'],
+                                 attention_mask=kwargs['attention_mask'],
+                                 labels=wrong_ids,
+                                 output_hidden_states=True,
+                                return_dict=True)
+
+        dec_hidden_states_wrong = outputs_wrong['decoder_hidden_states']
+        dec_last_hidden_wrong = dec_hidden_states_wrong[-1]
+
+
+        # receive logits from last timestep according to padding
+        sequence_lengths_targets_wrong = torch.ne(wrong_ids, -100).sum(-1)-1
+        wrong_dec_hidden = dec_last_hidden_wrong[range(batch_size),
+                                       sequence_lengths_targets_wrong]
+        import ipdb;ipdb.set_trace()
+
+
+        return lm_loss, lm_logits, clf_enc_logits_emo,\
+               anchor_dec_hidden, same_dec_hidden, wrong_dec_hidden
+
+    def forward_validate(self, *args, **kwargs):
+        batch_size = kwargs['input_ids'].shape[0]
+        emo_label = kwargs['emolabel']
+        kwargs.pop('emolabel', None)
+
+        outputs = self.lm_model(**kwargs, output_hidden_states=True,
+                                return_dict=True)
+        lm_loss = outputs['loss']
+        lm_logits = outputs['logits']
+        dec_hidden_states = outputs['decoder_hidden_states']
+        enc_last_hidden = outputs['encoder_last_hidden_state']
+        enc_hidden_states = outputs['encoder_hidden_states']
+        dec_last_hidden = dec_hidden_states[-1]
+
+        clf_enc_emo_repr = self.clf_layer1(enc_last_hidden)
+        clf_enc_logits_emo = self.clf_layer2(clf_enc_emo_repr)
+
+        # receive logits from last timestep according to padding
+        sequence_lengths_input = torch.ne(kwargs['input_ids'],
+                                          self.config.pad_token_id).sum(-1) - 1
+        sequence_lengths_targets = torch.ne(kwargs['labels'], -100).sum(-1) - 1
+
+        clf_enc_emo_repr = clf_enc_emo_repr[range(batch_size),
+                                       sequence_lengths_input]
+        clf_enc_logits_emo = clf_enc_logits_emo[range(batch_size),
+                                       sequence_lengths_input]
+
+
+        return lm_loss, lm_logits, clf_enc_logits_emo

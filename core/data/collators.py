@@ -304,6 +304,70 @@ class T5CollatorEmpChatEmoNegSampling(object):
         return padded_inputs, inputs_pad_mask, padded_targets,replaced_targ, \
                targets_pad_mask,emo_labels,replaced_neg,neg_pad_mask
 
+class T5CollatorEmpChatEmoPosNegSampling(object):
+    def __init__(self, pad_indx=0, device='cpu'):
+        self.pad_indx = pad_indx
+        self.device = device
+
+    def replace_pad_labels(self,mytensor,value):
+        tmp = mytensor.clone()
+        tmp[mytensor==0] = value
+        return tmp
+
+    def __call__(self, batch):
+        inputs, targets, labels, ans_same, ans_wrong = map(list, zip(*batch))
+
+        batch_size = len(inputs)
+
+        input_lengths = torch.tensor(
+            [len(s) for s in inputs], device=self.device)
+        targets_lengths = torch.tensor(
+            [len(s) for s in targets], device=self.device)
+        same_lengths = torch.tensor(
+            [len(s) for s in ans_same], device=self.device)
+        wrong_lengths = torch.tensor(
+            [len(s) for s in ans_wrong], device=self.device)
+
+        # attention mask
+        max_length = max(input_lengths)
+        inputs_pad_mask = pad_mask(input_lengths, max_length=max_length,
+                                   device=self.device)
+        max_length = max(targets_lengths)
+        targets_pad_mask = pad_mask(targets_lengths, max_length=max_length,
+                                   device=self.device)
+        max_length = max(same_lengths)
+        same_pad_mask = pad_mask(same_lengths, max_length=max_length,
+                                    device=self.device)
+        max_length = max(wrong_lengths)
+        wrong_pad_mask = pad_mask(wrong_lengths, max_length=max_length,
+                                    device=self.device)
+
+        # Pad inputs and targets
+        padded_inputs = (
+            pad_sequence(inputs, batch_first=True,
+                         padding_value=self.pad_indx)
+                .to(self.device))
+        padded_targets = (
+            pad_sequence(targets, batch_first=True,
+                         padding_value=self.pad_indx)
+                .to(self.device))
+        replaced_targ = self.replace_pad_labels(padded_targets, -100)
+        padded_same = (
+            pad_sequence(ans_same, batch_first=True,
+                         padding_value=self.pad_indx)
+                .to(self.device))
+        replaced_same = self.replace_pad_labels(padded_same, -100)
+        padded_wrong = (
+            pad_sequence(ans_wrong, batch_first=True,
+                         padding_value=self.pad_indx)
+                .to(self.device))
+        replaced_wrong = self.replace_pad_labels(padded_wrong, -100)
+
+        emo_labels = mktensor(labels, dtype=torch.long)
+        import ipdb;ipdb.set_trace()
+        return padded_inputs, inputs_pad_mask, padded_targets,replaced_targ, \
+               targets_pad_mask,emo_labels,replaced_same,same_pad_mask, \
+               replaced_wrong, wrong_pad_mask
 
 class T5CollatorPersChat(object):
     def __init__(self, pad_indx=0, device='cpu'):

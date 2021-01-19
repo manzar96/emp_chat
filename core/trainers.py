@@ -1500,6 +1500,202 @@ class T5TransformerTrainerNeg:
         self.train_epochs(epochs, train_loader, val_loader)
 
 
+
+class T5TransformerTrainerPosNeg:
+
+    def __init__(self, model,
+                 optimizer,
+                 patience,
+                 criterion,
+                 multitask1=1.0,
+                 multitask2=1.0,
+                 margin=1.0,
+                 scheduler=None,
+                 checkpoint_dir=None,
+                 clip=None,
+                 device='cpu'):
+
+        self.model = model.to(device)
+        self.optimizer = optimizer
+        self.scheduler = scheduler
+        self.checkpoint_dir = checkpoint_dir
+        self.clip = clip
+        self.device = device
+        self.patience = patience
+        self.criterion = criterion
+        self.similarity = nn.TripletMarginLoss(margin=margin,p=2)
+        self.multitask1 = multitask1
+        self.multitask2 = multitask2
+
+    def print_epoch(self, epoch, avg_train_epoch_loss, avg_val_epoch_loss,
+                    cur_patience, strt):
+
+        print("Epoch {}:".format(epoch+1))
+        print("Train loss: {} | Train PPL: {}".format(
+            avg_train_epoch_loss, math.exp(avg_train_epoch_loss)))
+        print("Val loss: {} | Val PPL: {}".format(avg_val_epoch_loss,
+              math.exp(avg_val_epoch_loss)))
+        print("Patience left: {}".format(self.patience-cur_patience))
+        print("Time: {} mins".format((time.time() - strt) / 60.0))
+        print("++++++++++++++++++")
+
+    def save_epoch(self, epoch, loss=None):
+
+        if not os.path.exists(self.checkpoint_dir):
+            os.makedirs(self.checkpoint_dir)
+        torch.save(self.model.state_dict(), os.path.join(
+            self.checkpoint_dir, 'model_checkpoint.pth'),
+                   _use_new_zipfile_serialization=False)
+        # we use the proposed method for saving T5 model
+        # self.model.save_pretrained(os.path.join(self.checkpoint_dir,'model_checkpoint'))
+        # torch.save(self.optimizer.state_dict(), os.path.join(
+        #     self.checkpoint_dir,'optimizer_checkpoint'))
+
+
+
+    def calc_val_loss(self, val_loader):
+
+        self.model.eval()
+        with torch.no_grad():
+            avg_val_loss = 0
+            avg_val_lm_loss = 0
+            avg_enc_acc = 0
+
+            for index, batch in enumerate(tqdm(val_loader)):
+                inputs = to_device(batch[0], device=self.device)
+                inputs_att = to_device(batch[1], device=self.device)
+                pad_targets = to_device(batch[2], device=self.device)
+                repl_targets = to_device(batch[3], device=self.device)
+                targets_att = to_device(batch[4], device=self.device)
+                emo_label = to_device(batch[5], device=self.device)
+
+                outputs = self.model.forward_validate(emolabel=emo_label,
+                                            input_ids=inputs,
+                                     attention_mask=inputs_att,
+                                     labels=repl_targets)
+                lm_loss = outputs[0]
+                lm_logits = outputs[1]
+                clf_logits_enc = outputs[2]
+
+                enc_emo = F.softmax(clf_logits_enc, dim=1)
+                enc_emo = torch.argmax(enc_emo, dim=1)
+                enc_acc = sum(enc_emo == emo_label).item() / inputs.shape[0]
+                avg_val_lm_loss = avg_val_lm_loss + lm_loss
+                avg_enc_acc += enc_acc
+
+            avg_val_lm_loss = avg_val_lm_loss / len(val_loader)
+            avg_enc_acc = avg_enc_acc / len(val_loader)
+            print("avg val lm_loss {}".format(avg_val_lm_loss))
+            print("avg val enc acc {}".format(avg_enc_acc))
+            return avg_val_lm_loss
+
+
+    def train_step(self, batch):
+        self.model.train()
+        self.optimizer.zero_grad()
+
+        inputs = to_device(batch[0], device=self.device)
+        inputs_att = to_device(batch[1], device=self.device)
+        pad_targets = to_device(batch[2], device=self.device)
+        repl_targets = to_device(batch[3], device=self.device)
+        targets_att = to_device(batch[4], device=self.device)
+        emo_label = to_device(batch[5], device=self.device)
+        same_padded = to_device(batch[6], device=self.device)
+        wrong_padded = to_device(batch[8], device=self.device)
+
+        outputs = self.model(emolabel=emo_label,
+                             input_ids=inputs,
+                             attention_mask=inputs_att,
+                             labels=repl_targets,
+                             input_ids2=same_padded,
+                             input_ids3=wrong_padded)
+        lm_loss = outputs[0]
+        lm_logits = outputs[1]
+        clf_logits_enc = outputs[2]
+        anchor_dec_hidden = outputs[3]
+        same_dec_hidden = outputs[4]
+        wrong_dec_hidden = outputs[5]
+        similarity_loss = self.similarity(anchor_dec_hidden, same_dec_hidden,
+                                          wrong_dec_hidden)
+        clf_loss = self.criterion(clf_logits_enc, emo_label)
+        enc_emo = F.softmax(clf_logits_enc, dim=1)
+        enc_emo = torch.argmax(enc_emo, dim=1)
+
+        enc_acc = sum(enc_emo==emo_label).item() / inputs.shape[0]
+
+        return lm_loss, clf_loss, similarity_loss, enc_acc
+
+    def train_epochs(self, n_epochs, train_loader, val_loader):
+
+        best_val_loss, cur_patience = 10000, 0
+
+        print("Training model....")
+        self.model.train()
+
+        for epoch in range(n_epochs):
+            iters=0
+            if cur_patience == self.patience:
+                break
+
+            avg_train_loss = 0
+            avg_train_lm_loss = 0
+            avg_clf_loss = 0
+            avg_similarity = 0
+            avg_enc_acc = 0
+            strt = time.time()
+
+            for index, sample_batch in enumerate(tqdm(train_loader)):
+
+                lm_loss, clf_loss, similarity_loss,enc_acc = \
+                    self.train_step(
+                    sample_batch)
+
+                # loss = lm_loss + self.aux_weight*clf_loss - similarity_loss
+                loss = lm_loss + self.multitask1*clf_loss + \
+                                   self.multitask2*similarity_loss
+                avg_train_loss += loss.item()
+                avg_clf_loss += self.multitask1*clf_loss.item()
+                avg_similarity += self.multitask2*similarity_loss.item()
+                avg_train_lm_loss += lm_loss.item()
+                avg_enc_acc += enc_acc
+                loss.backward(retain_graph=False)
+                iters += 1
+                if self.clip is not None:
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(),
+                                                   self.clip)
+                self.optimizer.step()
+                if iters%400==0:
+                    print("lm_loss {},   clf_loss  {}".format(lm_loss.item(),
+                                                              self.multitask1*clf_loss.item()))
+                    # print("total loss {}".format(loss.item()))
+                    # print("Train lm loss {}".format(avg_train_lm_loss/iters))
+            avg_train_loss = avg_train_loss / len(train_loader)
+            avg_train_lm_loss = avg_train_lm_loss / len(train_loader)
+            avg_clf_loss = avg_clf_loss / len(train_loader)
+            avg_similarity = avg_similarity / len(train_loader)
+            avg_enc_acc = avg_enc_acc / len(train_loader)
+
+            print("avg train loss {} ".format(avg_train_loss))
+            print("avg train clf loss {} ".format(avg_clf_loss))
+            print("avg train similarity loss {} ".format(avg_similarity))
+            print("avg enc acc {} ".format(avg_enc_acc))
+            avg_val_loss = self.calc_val_loss(val_loader)
+
+            if avg_val_loss < best_val_loss:
+                self.save_epoch(epoch)
+                best_val_loss = avg_val_loss
+                cur_patience = 0
+            else:
+                cur_patience += 1
+            self.print_epoch(epoch, avg_train_lm_loss, avg_val_loss,
+                             cur_patience, strt)
+
+    def fit(self, train_loader, val_loader, epochs):
+        self.train_epochs(epochs, train_loader, val_loader)
+
+
+
+
 class BlenderBotTrainer:
 
     def __init__(self, model,
