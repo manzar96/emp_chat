@@ -601,7 +601,6 @@ class T5ConditionalGenerationEmotionsSharedPosNeg(nn.Module):
         sequence_lengths_targets_wrong = torch.ne(wrong_ids, -100).sum(-1)-1
         wrong_dec_hidden = dec_last_hidden_wrong[range(batch_size),
                                        sequence_lengths_targets_wrong]
-        import ipdb;ipdb.set_trace()
 
 
         return lm_loss, lm_logits, clf_enc_logits_emo,\

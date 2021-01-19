@@ -364,7 +364,6 @@ class T5CollatorEmpChatEmoPosNegSampling(object):
         replaced_wrong = self.replace_pad_labels(padded_wrong, -100)
 
         emo_labels = mktensor(labels, dtype=torch.long)
-        import ipdb;ipdb.set_trace()
         return padded_inputs, inputs_pad_mask, padded_targets,replaced_targ, \
                targets_pad_mask,emo_labels,replaced_same,same_pad_mask, \
                replaced_wrong, wrong_pad_mask
