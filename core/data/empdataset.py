@@ -1,10 +1,9 @@
 import os
 import numpy as np
-import pickle5 as pickle
+import pickle as pickle
 import random
 from core.utils.tensors import mktensor
 from torch.utils.data import Dataset
-from transformers import BertTokenizer
 import torch
 
 class EmpatheticDataset(Dataset):
@@ -52,6 +51,12 @@ class EmpatheticDataset(Dataset):
             else:
                 # we have new conversation so empty history
                 history = []
+        # dict_conv={}
+        # for index,sample in enumerate(data):
+        #     dict_conv[index] = sample[0].split("</s>")
+        # import ipdb;ipdb.set_trace()
+        # convfile = open("./data/empatheticdialogues/conversation.pkl","wb")
+        # pickle.dump(dict_conv,convfile)
         return data, ids
 
     def get_labels_dict(self):
@@ -390,5 +395,4 @@ class EmpatheticDatasetPosNeg(Dataset):
 
 if __name__ == "__main__":
 
-    train_dataset = EmpatheticDatasetPosNeg('train', 10)
-    import ipdb;ipdb.set_trace()
+    test_dataset = EmpatheticDataset('test', 4)
