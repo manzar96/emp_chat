@@ -57,7 +57,7 @@ val_loader = DataLoader(val_dataset, batch_size=options.batch_size,
 # create model
 lm_model = T5ForConditionalGeneration.from_pretrained('t5-base')
 model = T5ConditionalGenerationEmotionsShared(lm_model=lm_model,
-                                          num_classes=2,
+                                          num_classes=32,
                                           device=DEVICE)
 
 
