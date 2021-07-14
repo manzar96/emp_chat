@@ -1101,7 +1101,7 @@ class T5TransformerTrainerSimilarity:
         self.aux_weight1 = auxilary_loss_weight1
         self.aux_weight2 = auxilary_loss_weight2
         # self.similarity = nn.CosineSimilarity(dim=1, eps=1e-08)
-        self.similarity = nn.CosineEmbeddingLoss()
+        self.similarity = nn.CosineEmbeddingLoss(reduction='mean')
 
     def print_epoch(self, epoch, avg_train_epoch_loss, avg_val_epoch_loss,
                     cur_patience, strt):
