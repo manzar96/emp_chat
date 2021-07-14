@@ -18,7 +18,7 @@ class EmpatheticDataset(Dataset):
         self.data, self.ids = self.read_data()
         self.label2idx, self.idx2label = self.get_labels_dict()
 
-        # self.change_labels()
+        self.change_labels()
         self.transforms = []
         # we use different tokenizers for context and answers in case its
         # needed!
