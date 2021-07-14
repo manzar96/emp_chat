@@ -27,7 +27,7 @@ def add_cmdline_args(argparser):
         help='Dropout used after ReLU. From tensor2tensor.',
     )
     argparser.add_argument(
-        '--n-heads', type=int, default=2,
+        '--nheads', type=int, default=2,dest='n_heads',
         help='Number of multihead attention heads'
     )
     argparser.add_argument("--embeddings", type=str,

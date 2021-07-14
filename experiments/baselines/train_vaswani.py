@@ -64,7 +64,7 @@ else:
         old_emb_file = options.embeddings
         freq_words_file = './cache/freq_words.txt'
         create_emb_file(new_emb_file, old_emb_file, freq_words_file, word_counts,
-                        most_freq=19000)
+                        most_freq=20000)
         word2idx, idx2word, embeddings = EmbeddingsLoader(new_emb_file,
                                                           options.embeddings_size,
                                                           extra_tokens=
@@ -79,7 +79,7 @@ else:
                                                    extra_tokens=
                                                    DIALOG_SPECIAL_TOKENS)
         embeddings = None
-
+import ipdb;ipdb.set_trace()
 if not os.path.exists(options.ckpt):
     os.makedirs(options.ckpt)
 file1 = open(os.path.join(options.ckpt, 'word2idx.pkl'), "wb")
