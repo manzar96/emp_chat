@@ -1155,9 +1155,10 @@ class T5TransformerTrainerSimilarity:
                 clf_logits_dec = outputs[4]
                 dec_emo_repr = outputs[5]
 
-                similarity_loss = self.similarity(enc_emo_repr,
-                                                  dec_emo_repr,
-                                                  torch.tensor(1, device=self.device))
+                similarity_loss = self.similarity(enc_emo_repr,dec_emo_repr,
+                                                  torch.tensor((
+                                                      enc_emo_repr.shape[0],
+                                                      1), device=self.device))
                 clf_loss = self.criterion(clf_logits_enc, emo_label)
                 enc_emo = F.softmax(clf_logits_enc, dim=1)
                 enc_emo = torch.argmax(enc_emo, dim=1)
