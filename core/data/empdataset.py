@@ -1,6 +1,6 @@
 import os
 import numpy as np
-import pickle5 as pickle
+import pickle as pickle
 # import pickle as pickle
 import random
 from core.utils.tensors import mktensor

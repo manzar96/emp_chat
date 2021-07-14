@@ -16,7 +16,7 @@ from core.data.collators import T5CollatorEmpChatEmo
 from core.utils.transforms import ToTensor
 from core.utils.tensors import to_device
 from core.metrics.metrics import calc_sentence_bleu_score, \
-    calc_word_error_rate
+    calc_word_error_rate, distinct_1, distinct_2, avg_len
 
 
 
@@ -55,8 +55,10 @@ def calc_metrics(options,tokenizer):
     bleu3=[]
     bleu4 = []
     word_error_rate = []
+    all_outputs = []
     for line in lines:
         inp, out, trgt, emo_label = line[:-1].split("\t\t")
+        all_outputs.append(out)
         inp = tokenizer.encode(inp)
         out = tokenizer.encode(out)
         trgt = tokenizer.encode(trgt)
@@ -72,6 +74,14 @@ def calc_metrics(options,tokenizer):
     print("Average BLEU score: {}".format( (np.mean(bleu1)+np.mean(
         bleu2)+np.mean(bleu3)+np.mean(bleu4))/4.0 ) )
     #print("Word Error Rate: {}".format(np.mean(word_error_rate)))
+
+    distinct1 = distinct_1(all_outputs)
+    distinct2 = distinct_2(all_outputs)
+    avg_length = avg_len(all_outputs)
+    print("Distinct 1: ",distinct1)
+    print("Distinct 2: ",distinct2)
+    print("Average Length: ",avg_length)
+
 
 
 def _generate(options, model, loader, tokenizer, idx2emo, device):
@@ -158,11 +168,11 @@ model.config.dropout_rate = 0
 
 import ipdb;ipdb.set_trace()
 # generate answers model
-_generate(options, model, test_loader, tokenizer, test_dataset.idx2label,
-          DEVICE)
+# _generate(options, model, test_loader, tokenizer, test_dataset.idx2label,
+#           DEVICE)
 
 # calc and print metrics
-calc_test_ppl(model, test_loader, DEVICE)
-# calc_metrics(options, tokenizer)
+# calc_test_ppl(model, test_loader, DEVICE)
+calc_metrics(options, tokenizer)
 
 #calc_similarity_trans(options)
