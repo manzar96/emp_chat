@@ -136,7 +136,8 @@ print('Total Parameters: {}'.format(numparams))
 print('Trainable Parameters: {}'.format(train_numparams))
 
 #optimizer = SGD(model.parameters(), lr=0.001, momentum=0.9)
-optimizer = Adamax(model.parameters(), lr=options.lr)
+# optimizer = Adamax(model.parameters(), lr=options.lr)
+optimizer = Adam(model.parameters(), lr=options.lr,weight_decay=1e-6)
 
 if options.optimckpt is not None:
     state_dict = torch.load(options.optimckpt, map_location='cpu')
