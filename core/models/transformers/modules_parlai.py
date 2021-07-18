@@ -75,8 +75,7 @@ class TransformerEncodeDecoderVaswani(nn.Module):
             self.embedding = nn.Embedding(len(dictionary), embedding_size,
                                      padding_idx=self.pad_idx)
             self.embedding.weight = nn.Parameter(torch.from_numpy(
-                embedding_weights),
-                                            requires_grad=opt.learn_embeddings)
+                embedding_weights),requires_grad=opt.learn_embeddings)
         else:
             self.embedding = nn.Embedding(len(dictionary), embedding_size,
                                      padding_idx=self.pad_idx)
