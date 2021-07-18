@@ -138,11 +138,11 @@ model.to(DEVICE)
 
 import ipdb;ipdb.set_trace()
 # generate answers model
-#_generate(options, model, test_loader, idx2word, DEVICE)
+_generate(options, model, test_loader, idx2word, DEVICE)
 
 # calc and print metrics
-criterion = SequenceCrossEntropyLoss(word2idx[DIALOG_SPECIAL_TOKENS.PAD.value])
-calc_test_ppl(model, test_loader, criterion, DEVICE)
+# criterion = SequenceCrossEntropyLoss(word2idx[DIALOG_SPECIAL_TOKENS.PAD.value])
+# calc_test_ppl(model, test_loader, criterion, DEVICE)
 #calc_metrics(options, tokenizer)
 
 #calc_similarity_trans(options)
