@@ -67,9 +67,8 @@ def _generate(options, model, loader, idx2word, device):
         pad_targets = to_device(batch[2], device=device)
         repl_targets = to_device(batch[3], device=device)
         targets_att = to_device(batch[4], device=device)
-
-        scores, preds, encoder_states = model(inputs, ys=pad_targets)
         import ipdb;ipdb.set_trace()
+        scores, preds, encoder_states = model.generate(inputs, ys=pad_targets)
         inp_tokens = [idx2word[token.item()] for token in inputs[0]]
         pred_tokens = [idx2word[token.item()] for token in preds[0]]
         # inp_list = ["".join(tokenizer.decode(inputs[i])) for i in range(
