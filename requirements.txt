@@ -16,7 +16,7 @@ ipdb==0.13.2
 ipython==7.16.3
 ipython-genutils==0.2.0
 jedi==0.17.0
-joblib==0.14.1
+joblib==1.2.0
 murmurhash==1.0.2
 numpy==1.18.4
 parso==0.7.0
